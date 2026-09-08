@@ -1,2012 +1,635 @@
 <!DOCTYPE html>
-<html lang="en" class="dark h-full">
+<html lang="en" class="h-full bg-slate-950 text-slate-100">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>ZenTravel - Minimalist Trip Planner</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ZenTravel - Collaborative Real-Time Trip Planner</title>
+    
+    <!-- Tailwind CSS CDN -->
+    
+    
+    
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
-  <!-- Tailwind CSS -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          colors: {
-            brand: {
-              50: '#f2f8f5',
-              100: '#e1f0e9',
-              200: '#c3e2d5',
-              300: '#97cbba',
-              400: '#66aa97',
-              500: '#3a6b58', // Deep Emerald
-              600: '#2d5445',
-              700: '#223e33',
-              800: '#1c332b',
-              900: '#172b24',
-            }
-          },
-          fontFamily: {
-            sans: ['-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
-          }
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -webkit-tap-highlight-color: transparent;
         }
-      }
-    }
-  </script>
-
-  <!-- FontAwesome Icons -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
-  <!-- Firebase Compat SDKs (v11.6.1) -->
-  <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore-compat.js"></script>
-
-  <style>
-    /* Custom Scrollbars & Mobile Touch Tweaks */
-    ::-webkit-scrollbar {
-      width: 5px;
-      height: 5px;
-    }
-    ::-webkit-scrollbar-track {
-      background: transparent;
-    }
-    ::-webkit-scrollbar-thumb {
-      background: rgba(100, 116, 139, 0.4);
-      border-radius: 9999px;
-    }
-    .tap-highlight-none {
-      -webkit-tap-highlight-color: transparent;
-    }
-    
-    /* Dark Mode Glass Styling */
-    .dark .glass-card {
-      background: rgba(30, 41, 59, 0.75);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-    }
-    .dark .glass-nav {
-      background: rgba(15, 23, 42, 0.9);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      border-top: 1px solid rgba(255, 255, 255, 0.08);
-    }
-
-    /* Light Mode Glass Styling */
-    .glass-card {
-      background: rgba(255, 255, 255, 0.85);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      border: 1px solid rgba(226, 232, 240, 0.8);
-    }
-    .glass-nav {
-      background: rgba(255, 255, 255, 0.92);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      border-top: 1px solid rgba(226, 232, 240, 0.9);
-    }
-
-    .glow-accent {
-      box-shadow: 0 0 25px -5px rgba(58, 107, 88, 0.3);
-    }
-  </style>
+        /* Custom scrollbars */
+        ::-webkit-scrollbar {
+            width: 4px;
+            height: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #090d16;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 9999px;
+        }
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        /* High crispness for inputs */
+        input, select, textarea {
+            color: #f8fafc !important;
+            background-color: #0f172a !important;
+            opacity: 1 !important;
+            filter: none !important;
+            -webkit-text-fill-color: #f8fafc !important;
+        }
+        input::placeholder, textarea::placeholder {
+            color: #64748b !important;
+            -webkit-text-fill-color: #64748b !important;
+        }
+        /* Focus state outline */
+        input:focus, select:focus, textarea:focus {
+            outline: 2px solid #14b8a6 !important;
+            outline-offset: -1px;
+        }
+        /* Active Tab Styling */
+        .tab-btn.active {
+            background-color: #0d9488;
+            color: #ffffff;
+            box-shadow: 0 4px 12px rgba(13, 148, 136, 0.35);
+        }
+        .tab-btn:not(.active) {
+            background-color: #1e293b;
+            color: #94a3b8;
+        }
+        .tab-btn:not(.active):hover {
+            background-color: #334155;
+            color: #f8fafc;
+        }
+    </style>
 </head>
-<body class="h-full w-full text-slate-800 dark:text-slate-100 flex flex-col font-sans select-none overflow-hidden antialiased bg-slate-100 dark:bg-slate-950 transition-colors duration-200">
+<body class="h-full flex flex-col bg-slate-950 text-slate-100 antialiased selection:bg-brand-500 selection:text-white pb-10">
 
-  <div id="app" class="flex flex-col h-full w-full max-w-md mx-auto relative bg-slate-50 dark:bg-slate-900 shadow-2xl overflow-hidden border-x border-slate-200 dark:border-slate-800">
-    
-    <!-- STICKY HEADER -->
-    <header class="sticky top-0 z-30 glass-card px-4 py-3 flex items-center justify-between border-b border-slate-200 dark:border-slate-800/80">
-      <div class="flex items-center space-x-2.5 cursor-pointer" onclick="switchTab('dashboard')">
-        <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-brand-600 to-brand-400 flex items-center justify-center shadow-lg shadow-brand-500/20 active:scale-95 transition">
-          <i class="fa-solid fa-compass text-white text-lg"></i>
+    <!-- TOP NAVIGATION BAR -->
+    <header class="bg-slate-900/90 backdrop-blur-xl border-b border-slate-800 sticky top-0 z-40 shadow-lg">
+        <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-14 sm:h-16 gap-2">
+                
+                <!-- Logo & Brand -->
+                <div class="flex items-center gap-2.5 cursor-pointer">
+                    <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-teal-400 flex items-center justify-center shadow-lg shadow-brand-500/20 shrink-0">
+                        <i class="fa-solid font-bold text-slate-950 text-lg sm:text-xl fa-compass"></i>
+                    </div>
+                    <div>
+                        <h1 class="font-bold text-base sm:text-lg leading-tight tracking-wide text-white flex items-center gap-1.5">
+                            ZenTravel
+                            <span class="text-[9px] sm:text-[10px] uppercase font-bold px-1.5 py-0.5 rounded bg-brand-500/20 text-brand-400 border border-brand-500/30">Sync</span>
+                        </h1>
+                        <p class="text-[10px] sm:text-xs text-slate-400 hidden sm:block">Collaborative Trip Planner</p>
+                    </div>
+                </div>
+
+                <!-- Vault Controls & Sync Badge -->
+                <div class="flex items-center gap-2">
+                    
+                    <!-- Network Status Indicator -->
+                    <div id="syncStatusBadge" class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-950 border border-slate-800 text-[11px] font-medium">
+                        <span id="syncDot" class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+                        <span id="syncStatusText" class="text-slate-300 text-[10px] sm:text-xs">Connecting</span>
+                    </div>
+
+                    <!-- Shared Vault Badge Button -->
+                    <div class="flex items-center bg-slate-950 rounded-xl border border-slate-800 p-0.5">
+                        <button title="Switch Vault ID" class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg hover:bg-slate-800 transition text-xs font-mono font-bold text-brand-400">
+                            <i class="fa-solid fa-vault text-xs"></i>
+                            <span id="currentVaultDisplay">ZEN-8492</span>
+                        </button>
+                        <button title="Copy Vault Key" class="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition text-xs">
+                            <i class="fa-regular fa-copy"></i>
+                        </button>
+                    </div>
+
+                    <!-- Diagnostics Console Button -->
+                    <button title="Diagnostics & Logs" class="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-400 hover:text-white transition shrink-0">
+                        <i class="fa-solid fa-terminal text-xs"></i>
+                    </button>
+                </div>
+            </div>
         </div>
-        <div>
-          <h1 class="text-base font-bold tracking-wide bg-gradient-to-r from-brand-700 dark:from-white via-slate-700 dark:via-slate-200 to-brand-500 dark:to-brand-300 bg-clip-text text-transparent">ZenTravel</h1>
-          <p class="text-[10px] text-slate-500 dark:text-slate-400 font-medium -mt-0.5">Minimalist Planner</p>
-        </div>
-      </div>
-
-      <div class="flex items-center space-x-1.5">
-        <!-- Theme Toggle -->
-        <button onclick="toggleTheme()" class="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 flex items-center justify-center border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 transition active:scale-95 tap-highlight-none" title="Toggle Light/Dark Theme">
-          <i id="theme-icon" class="fa-solid fa-moon text-xs"></i>
-        </button>
-
-        <!-- Vault Sync Button -->
-        <button id="vault-badge-btn" onclick="openVaultModal()" class="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-full bg-slate-200/80 dark:bg-slate-800/90 hover:bg-slate-300 dark:hover:bg-slate-700/80 border border-slate-300 dark:border-slate-700 transition active:scale-[0.96] tap-highlight-none" title="Cloud Sync Vault Code">
-          <span id="sync-indicator" class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
-          <span class="text-xs font-mono text-slate-700 dark:text-slate-300 font-semibold" id="header-vault-id">ZEN-8492</span>
-          <i class="fa-solid fa-arrows-rotate text-[10px] text-slate-500 dark:text-slate-400"></i>
-        </button>
-
-        <!-- Currency & Exchange Tools -->
-        <button onclick="openToolsModal()" class="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 flex items-center justify-center border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 transition active:scale-95 tap-highlight-none" title="Currency Pairs & Converter">
-          <i class="fa-solid fa-calculator text-xs"></i>
-        </button>
-
-        <!-- Diagnostics HUD Trigger -->
-        <button onclick="openDiagnosticsModal()" class="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 flex items-center justify-center border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 transition active:scale-95 tap-highlight-none" title="Diagnostics HUD & Google Auth">
-          <i id="header-user-icon" class="fa-solid fa-user-gear text-xs"></i>
-        </button>
-      </div>
     </header>
 
-    <main id="content-container" class="flex-1 overflow-y-auto px-4 py-4 space-y-4 pb-24">
-      <!-- Dynamic Views rendered here via JS -->
+    <!-- MAIN APPLICATION CONTAINER -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-4 space-y-4">
+
+        <!-- TRIP SELECTOR & SUMMARY HEADER CARD -->
+        <section class="bg-slate-900/80 border border-slate-800/90 rounded-2xl p-3.5 sm:p-5 shadow-xl backdrop-blur-md">
+            
+            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                
+                <!-- Active Trip Selector Dropdown & Actions -->
+                <div class="space-y-2">
+                    <label for="tripSelect" class="block text-[10px] sm:text-[11px] font-bold uppercase text-brand-400 tracking-wider">Active Trip Itinerary</label>
+                    <div class="flex flex-wrap sm:flex-nowrap items-center gap-2">
+                        <div class="relative w-full sm:w-auto min-w-[220px] sm:min-w-[280px]">
+                            <select id="tripSelect" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-700 bg-slate-950 text-slate-100 font-medium text-xs sm:text-sm shadow-inner focus:border-brand-500 cursor-pointer appearance-none pr-8">
+                                <!-- Options dynamically injected -->
+                            </select>
+                            <i class="fa-solid fa-chevron-down absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs pointer-events-none"></i>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="flex items-center gap-1.5 w-full sm:w-auto shrink-0 justify-end">
+                            <button class="flex-1 sm:flex-initial px-3 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-semibold text-xs flex items-center justify-center gap-1.5 transition shadow-lg shadow-brand-600/20 active:scale-95">
+                                <i class="fa-solid fa-plus"></i> <span>New</span>
+                            </button>
+                            <button title="Edit Active Trip" class="px-3 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium text-xs flex items-center justify-center gap-1.5 transition border border-slate-700 active:scale-95">
+                                <i class="fa-solid fa-pen-to-square"></i> <span class="hidden sm:inline">Edit</span>
+                            </button>
+                            <button title="Delete Active Trip" class="px-3 py-2.5 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 font-medium text-xs flex items-center justify-center gap-1.5 transition active:scale-95">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Destination & Date Info Header -->
+                <div class="border-t lg:border-t-0 border-slate-800 pt-2.5 lg:pt-0 lg:text-right">
+                    <h2 id="tripTitleHeader" class="text-base sm:text-xl font-extrabold text-white tracking-tight leading-snug">Select or Create a Trip</h2>
+                    <div id="tripSubtitleHeader" class="text-xs text-slate-400 flex flex-wrap items-center lg:justify-end gap-x-3 gap-y-1 mt-1">
+                        <span class="flex items-center gap-1 text-slate-300"><i class="fa-solid fa-location-dot text-brand-400"></i> <span id="tripDestDisplay">-</span></span>
+                        <span class="hidden sm:inline text-slate-700">|</span>
+                        <span class="flex items-center gap-1 text-slate-300"><i class="fa-regular fa-calendar text-brand-400"></i> <span id="tripDatesDisplay">-</span></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SUMMARY METRICS COUNTERS -->
+            <div class="grid grid-cols-2 sm:grid-cols-5 gap-2 sm:gap-3 mt-4 pt-3.5 border-t border-slate-800/80">
+                <div class="bg-slate-950/70 rounded-xl p-2.5 border border-slate-800/80">
+                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Flights</span>
+                    <div class="text-base sm:text-lg font-extrabold text-brand-400 flex items-center gap-1.5 mt-0.5">
+                        <i class="fa-solid fa-plane text-xs opacity-80"></i>
+                        <span id="counterFlights">0</span>
+                    </div>
+                </div>
+                <div class="bg-slate-950/70 rounded-xl p-2.5 border border-slate-800/80">
+                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Lodging</span>
+                    <div class="text-base sm:text-lg font-extrabold text-teal-400 flex items-center gap-1.5 mt-0.5">
+                        <i class="fa-solid fa-hotel text-xs opacity-80"></i>
+                        <span id="counterLodging">0</span>
+                    </div>
+                </div>
+                <div class="bg-slate-950/70 rounded-xl p-2.5 border border-slate-800/80">
+                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Activities</span>
+                    <div class="text-base sm:text-lg font-extrabold text-emerald-400 flex items-center gap-1.5 mt-0.5">
+                        <i class="fa-solid fa-list-check text-xs opacity-80"></i>
+                        <span id="counterActivities">0</span>
+                    </div>
+                </div>
+                <div class="bg-slate-950/70 rounded-xl p-2.5 border border-slate-800/80">
+                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Est. Budget</span>
+                    <div class="text-base sm:text-lg font-extrabold text-indigo-400 flex items-center gap-1 mt-0.5">
+                        <span class="text-[10px]">SGD</span>
+                        <span id="counterBudget">S$0</span>
+                    </div>
+                </div>
+                <div class="bg-slate-950/70 rounded-xl p-2.5 border border-slate-800/80 col-span-2 sm:col-span-1">
+                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Packing</span>
+                    <div class="text-base sm:text-lg font-extrabold text-sky-400 flex items-center gap-1.5 mt-0.5">
+                        <i class="fa-solid fa-suitcase text-xs opacity-80"></i>
+                        <span id="counterPacking">0%</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- CLEAN STICKY NAVIGATION TAB BAR (UNBLURRED & INDEPENDENT Z-INDEX) -->
+        <nav class="sticky top-14 sm:top-16 z-20 bg-slate-950/95 backdrop-blur-md py-2 -mx-3 px-3 sm:mx-0 sm:px-0 border-y border-slate-800 shadow-md">
+            <div class="flex items-center gap-2 overflow-x-auto no-scrollbar pb-0.5">
+                <button id="tab-itinerary" class="tab-btn active px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold whitespace-nowrap transition-all flex items-center gap-2 shrink-0">
+                    <i class="fa-solid fa-calendar-days text-xs"></i> Itinerary
+                </button>
+                <button id="tab-flights" class="tab-btn px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold whitespace-nowrap transition-all flex items-center gap-2 shrink-0">
+                    <i class="fa-solid fa-plane-departure text-xs"></i> Flights
+                </button>
+                <button id="tab-lodging" class="tab-btn px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold whitespace-nowrap transition-all flex items-center gap-2 shrink-0">
+                    <i class="fa-solid fa-hotel text-xs"></i> Hotels
+                </button>
+                <button id="tab-packing" class="tab-btn px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold whitespace-nowrap transition-all flex items-center gap-2 shrink-0">
+                    <i class="fa-solid fa-clipboard-check text-xs"></i> Packing
+                </button>
+                <button id="tab-notes" class="tab-btn px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold whitespace-nowrap transition-all flex items-center gap-2 shrink-0">
+                    <i class="fa-solid fa-note-sticky text-xs"></i> Notes
+                </button>
+            </div>
+        </nav>
+
+        <!-- TAB CONTENT 1: ITINERARY PLANNER -->
+        <section id="view-itinerary" class="tab-view space-y-3">
+            
+            <!-- Day Filter Pills & Add Activity CTA -->
+            <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
+                <!-- Day Filters Row -->
+                <div id="dayFilterContainer" class="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1">
+                    <!-- Dynamic Day Pill Filters injected here -->
+                </div>
+
+                <button class="px-4 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-semibold text-xs sm:text-sm flex items-center justify-center gap-2 transition shadow-lg shadow-brand-600/20 shrink-0 active:scale-95">
+                    <i class="fa-solid fa-plus"></i> Add Activity
+                </button>
+            </div>
+
+            <!-- Itinerary Items Container -->
+            <div id="itineraryList" class="space-y-2.5">
+                <!-- Activity cards dynamically populated -->
+            </div>
+        </section>
+
+        <!-- TAB CONTENT 2: FLIGHT RESERVATIONS -->
+        <section id="view-flights" class="tab-view hidden space-y-3">
+            <div class="flex items-center justify-between gap-2">
+                <div>
+                    <h3 class="text-base sm:text-lg font-bold text-white">Flight Bookings</h3>
+                    <p class="text-[11px] sm:text-xs text-slate-400">Manage airline tickets, departure times, and PNR codes</p>
+                </div>
+                <button class="px-3.5 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-semibold text-xs sm:text-sm flex items-center gap-1.5 transition shadow-lg shadow-brand-600/20 shrink-0 active:scale-95">
+                    <i class="fa-solid fa-plus"></i> <span class="hidden sm:inline">Add Flight</span><span class="sm:hidden">Add</span>
+                </button>
+            </div>
+
+            <div id="flightsList" class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <!-- Flight cards dynamically populated -->
+            </div>
+        </section>
+
+        <!-- TAB CONTENT 3: ACCOMMODATIONS -->
+        <section id="view-lodging" class="tab-view hidden space-y-3">
+            <div class="flex items-center justify-between gap-2">
+                <div>
+                    <h3 class="text-base sm:text-lg font-bold text-white">Hotels & Accommodations</h3>
+                    <p class="text-[11px] sm:text-xs text-slate-400">Check-in dates, room details, and reservation confirmation IDs</p>
+                </div>
+                <button class="px-3.5 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-semibold text-xs sm:text-sm flex items-center gap-1.5 transition shadow-lg shadow-brand-600/20 shrink-0 active:scale-95">
+                    <i class="fa-solid fa-plus"></i> <span class="hidden sm:inline">Add Lodging</span><span class="sm:hidden">Add</span>
+                </button>
+            </div>
+
+            <div id="lodgingList" class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <!-- Lodging cards dynamically populated -->
+            </div>
+        </section>
+
+        <!-- TAB CONTENT 4: PACKING CHECKLIST -->
+        <section id="view-packing" class="tab-view hidden space-y-3">
+            <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-lg space-y-4">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                        <h3 class="text-base sm:text-lg font-bold text-white">Packing Checklist</h3>
+                        <p class="text-[11px] sm:text-xs text-slate-400">Live synchronized packing list across all devices</p>
+                    </div>
+                    
+                    <!-- Progress Bar Component -->
+                    <div class="flex items-center gap-3 min-w-[180px]">
+                        <div class="flex-1 bg-slate-950 rounded-full h-2.5 overflow-hidden border border-slate-800">
+                            <div id="packingProgressBar" class="bg-gradient-to-r from-brand-500 to-emerald-400 h-full transition-all duration-300" style="width: 0%"></div>
+                        </div>
+                        <span id="packingPercentText" class="text-xs font-extrabold text-brand-400 w-9 text-right">0%</span>
+                    </div>
+                </div>
+
+                <!-- Add Checklist Item Form -->
+                <form class="flex gap-2">
+                    <input type="text" id="newChecklistInput" placeholder="Add packing item (e.g., Power Adapter, Passport)..." required="" class="flex-1 px-3.5 py-2.5 rounded-xl border border-slate-700 bg-slate-950 text-slate-100 text-xs sm:text-sm focus:border-brand-500">
+                    <button type="submit" class="px-4 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-semibold text-xs sm:text-sm flex items-center gap-1.5 transition shrink-0 active:scale-95">
+                        <i class="fa-solid fa-plus"></i> Add
+                    </button>
+                </form>
+
+                <!-- Checklist Items Grid -->
+                <div id="checklistItemsList" class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                    <!-- Populated dynamically -->
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB CONTENT 5: SHARED COLLABORATIVE NOTES -->
+        <section id="view-notes" class="tab-view hidden space-y-3">
+            <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-lg space-y-3">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+                            Collaborative Notes & Reminders
+                        </h3>
+                        <p class="text-[11px] sm:text-xs text-slate-400">Emergency info, dining lists, and trip ideas</p>
+                    </div>
+                    <div id="notesSaveIndicator" class="text-[11px] text-slate-400 flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-950 border border-slate-800 shrink-0">
+                        <i class="fa-solid fa-cloud text-brand-400"></i> <span>Synced</span>
+                    </div>
+                </div>
+
+                <textarea id="sharedNotesTextarea" placeholder="Type shared trip notes here... (Changes auto-save and sync in real-time)" class="w-full h-72 sm:h-80 p-3.5 rounded-xl border border-slate-700 bg-slate-950 text-slate-100 text-xs sm:text-sm font-mono leading-relaxed focus:border-brand-500 resize-y"></textarea>
+            </div>
+        </section>
+
     </main>
 
-    <!-- FLOATING TOAST NOTIFICATION CONTAINER -->
-    <div id="toast-container" class="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 w-full max-w-xs px-4 pointer-events-none space-y-2"></div>
+    <!-- MODALS SECTION -->
 
-    <!-- BOTTOM TAB NAVIGATION -->
-    <nav class="fixed bottom-0 left-0 right-0 z-40 max-w-md mx-auto glass-nav px-2 py-2 flex justify-around items-center">
-      <button onclick="switchTab('dashboard')" id="nav-dashboard" class="nav-btn flex flex-col items-center py-1 px-3 rounded-xl transition-all tap-highlight-none text-brand-600 dark:text-brand-400 font-bold">
-        <i class="fa-solid fa-chart-pie text-base mb-1"></i>
-        <span class="text-[10px] font-medium">Dashboard</span>
-      </button>
-      <button onclick="switchTab('logistics')" id="nav-logistics" class="nav-btn flex flex-col items-center py-1 px-3 rounded-xl transition-all tap-highlight-none text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200">
-        <i class="fa-solid fa-plane-departure text-base mb-1"></i>
-        <span class="text-[10px] font-medium">Logistics</span>
-      </button>
-      <button onclick="switchTab('itinerary')" id="nav-itinerary" class="nav-btn flex flex-col items-center py-1 px-3 rounded-xl transition-all tap-highlight-none text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200">
-        <i class="fa-solid fa-calendar-days text-base mb-1"></i>
-        <span class="text-[10px] font-medium">Itinerary</span>
-      </button>
-      <button onclick="switchTab('budget')" id="nav-budget" class="nav-btn flex flex-col items-center py-1 px-3 rounded-xl transition-all tap-highlight-none text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200">
-        <i class="fa-solid fa-wallet text-base mb-1"></i>
-        <span class="text-[10px] font-medium">Budget</span>
-      </button>
-      <button onclick="switchTab('todo')" id="nav-todo" class="nav-btn flex flex-col items-center py-1 px-3 rounded-xl transition-all tap-highlight-none text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200">
-        <i class="fa-solid fa-list-check text-base mb-1"></i>
-        <span class="text-[10px] font-medium">To-Do</span>
-      </button>
-    </nav>
-  </div>
-
-  <!-- VAULT SYNC MODAL -->
-  <div id="vault-modal" class="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm hidden flex items-center justify-center p-4">
-    <div class="glass-card w-full max-w-sm rounded-2xl p-5 border border-slate-200 dark:border-slate-700 shadow-2xl relative">
-      <button onclick="closeVaultModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 dark:hover:text-white text-lg">
-        <i class="fa-solid fa-xmark"></i>
-      </button>
-
-      <div class="flex items-center space-x-3 mb-4">
-        <div class="w-10 h-10 rounded-xl bg-brand-500/20 text-brand-600 dark:text-brand-400 border border-brand-500/30 flex items-center justify-center text-lg">
-          <i class="fa-solid fa-vault"></i>
-        </div>
-        <div>
-          <h3 class="text-base font-bold text-slate-900 dark:text-white">Vault Sync Code</h3>
-          <p class="text-xs text-slate-500 dark:text-slate-400">Sync trip data live across devices</p>
-        </div>
-      </div>
-
-      <div class="bg-slate-100 dark:bg-slate-800/90 rounded-xl p-3 border border-slate-200 dark:border-slate-700 mb-4 text-center">
-        <p class="text-[11px] text-slate-500 dark:text-slate-400 uppercase tracking-wider font-semibold mb-1">Active Cloud Vault</p>
-        <div class="flex items-center justify-center space-x-2">
-          <span id="modal-vault-id" class="text-xl font-mono font-bold text-brand-600 dark:text-brand-300 tracking-wider">ZEN-8492</span>
-          <button onclick="copyVaultCode()" class="p-1.5 rounded-lg bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 active:scale-95 transition" title="Copy Vault Code">
-            <i class="fa-regular fa-copy text-xs"></i>
-          </button>
-          <button onclick="copySyncUrl()" class="p-1.5 rounded-lg bg-brand-600 hover:bg-brand-500 text-white active:scale-95 transition" title="Share Device Link">
-            <i class="fa-solid fa-share-nodes text-xs"></i>
-          </button>
-        </div>
-      </div>
-
-      <div class="space-y-3">
-        <label class="block text-xs font-medium text-slate-700 dark:text-slate-300">Join or Create Vault Code</label>
-        <div class="flex space-x-2">
-          <input type="text" id="vault-input" placeholder="e.g. ZEN-1234" class="flex-1 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-800 dark:text-white font-mono placeholder-slate-400 focus:outline-none focus:border-brand-500 uppercase">
-          <button onclick="joinVault()" class="px-4 py-2 bg-brand-600 hover:bg-brand-500 text-white rounded-xl text-sm font-medium transition active:scale-95">
-            Join
-          </button>
-        </div>
-        <p class="text-[11px] text-slate-500 dark:text-slate-400 leading-tight">Entering the same Vault Code on your phone and laptop pairs them instantly. Any changes will sync live in real-time.</p>
-      </div>
-
-      <div class="mt-4 pt-3 border-t border-slate-200 dark:border-slate-800 flex justify-between items-center">
-        <button onclick="generateNewVault()" class="text-xs text-brand-600 dark:text-brand-400 hover:underline font-medium flex items-center space-x-1">
-          <i class="fa-solid fa-plus text-[10px]"></i>
-          <span>Generate New Vault</span>
-        </button>
-        <button onclick="closeVaultModal()" class="px-3 py-1.5 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg text-xs font-medium">
-          Close
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- DIAGNOSTICS & GOOGLE AUTH HUD MODAL -->
-  <div id="diagnostics-modal" class="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm hidden flex items-center justify-center p-4">
-    <div class="glass-card w-full max-w-md rounded-2xl p-5 border border-slate-200 dark:border-slate-700 shadow-2xl relative max-h-[90vh] flex flex-col">
-      <div class="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
-        <div class="flex items-center space-x-2">
-          <i class="fa-solid fa-microchip text-brand-600 dark:text-brand-400"></i>
-          <h3 class="text-sm font-bold text-slate-900 dark:text-white">Diagnostics & Google Auth Panel</h3>
-        </div>
-        <button onclick="closeDiagnosticsModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-white">
-          <i class="fa-solid fa-xmark"></i>
-        </button>
-      </div>
-
-      <div class="py-3 space-y-3 overflow-y-auto flex-1 text-xs">
-        <!-- USER AUTH CARD -->
-        <div class="bg-slate-100 dark:bg-slate-800/80 rounded-xl p-3 border border-slate-200 dark:border-slate-700 space-y-2">
-          <div class="flex items-center space-x-3">
-            <div id="hud-user-avatar" class="w-10 h-10 rounded-full bg-slate-300 dark:bg-slate-700 flex items-center justify-center text-slate-600 dark:text-slate-300 text-lg overflow-hidden border border-slate-400 dark:border-slate-600">
-              <i class="fa-solid fa-user"></i>
-            </div>
-            <div class="flex-1 min-w-0">
-              <h4 id="hud-user-name" class="font-bold text-slate-900 dark:text-white truncate">Anonymous User</h4>
-              <p id="hud-user-email" class="text-[11px] text-slate-500 dark:text-slate-400 truncate">Not signed in with Google</p>
-            </div>
-          </div>
-
-          <div id="google-auth-actions" class="pt-2 border-t border-slate-200 dark:border-slate-700/60 flex space-x-2">
-            <button id="google-signin-btn" onclick="signInWithGoogle()" class="flex-1 py-2 px-3 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-800 dark:text-white rounded-xl font-medium border border-slate-300 dark:border-slate-700 flex items-center justify-center space-x-2 active:scale-95 transition shadow-sm">
-              <svg class="w-4 h-4" viewBox="0 0 24 24">
-                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
-                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
-              </svg>
-              <span>Sign in with Google</span>
+    <!-- 1. VAULT MANAGEMENT MODAL -->
+    <div id="vaultModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-3 sm:p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-5 sm:p-6 shadow-2xl relative">
+            <button class="absolute top-4 right-4 text-slate-400 hover:text-white text-lg p-1">
+                <i class="fa-solid fa-xmark"></i>
             </button>
-            <button id="google-signout-btn" onclick="signOutUser()" class="hidden py-2 px-3 bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 rounded-xl font-medium border border-rose-500/30 flex items-center justify-center space-x-1 active:scale-95 transition">
-              <i class="fa-solid fa-right-from-bracket mr-1"></i>
-              <span>Sign Out</span>
-            </button>
-          </div>
-        </div>
-
-        <!-- DIAGNOSTIC STATS -->
-        <div class="bg-slate-100 dark:bg-slate-800/80 rounded-xl p-3 border border-slate-200 dark:border-slate-700 space-y-1.5">
-          <div class="flex justify-between items-center">
-            <span class="text-slate-500 dark:text-slate-400">Auth Status:</span>
-            <span id="hud-auth-mode" class="font-mono text-brand-600 dark:text-brand-300 font-semibold">Active</span>
-          </div>
-          <div class="flex justify-between items-center">
-            <span class="text-slate-500 dark:text-slate-400">User UID:</span>
-            <span id="hud-user-uid" class="font-mono text-slate-700 dark:text-slate-300 truncate max-w-[160px]">Anon_****</span>
-          </div>
-          <div class="flex justify-between items-center">
-            <span class="text-slate-500 dark:text-slate-400">Active Vault:</span>
-            <span id="hud-vault-id" class="font-mono text-slate-700 dark:text-slate-300">ZEN-****</span>
-          </div>
-          <div class="flex justify-between items-center">
-            <span class="text-slate-500 dark:text-slate-400">Firestore Path:</span>
-            <span id="hud-firestore-path" class="font-mono text-[10px] text-slate-500 dark:text-slate-400 truncate max-w-[180px]">/public/data/vaults/...</span>
-          </div>
-        </div>
-
-        <div class="grid grid-cols-2 gap-2">
-          <button onclick="reauthAnon()" class="p-2 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 rounded-lg text-slate-800 dark:text-slate-200 text-center font-medium border border-slate-300 dark:border-slate-700 active:scale-95 transition">
-            <i class="fa-solid fa-user-shield text-brand-500 mr-1"></i> Re-Auth Anon
-          </button>
-          <button onclick="pingVaultWrite()" class="p-2 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 rounded-lg text-slate-800 dark:text-slate-200 text-center font-medium border border-slate-300 dark:border-slate-700 active:scale-95 transition">
-            <i class="fa-solid fa-bolt text-amber-500 mr-1"></i> Force Vault Save
-          </button>
-        </div>
-
-        <!-- DIAGNOSTIC CONSOLE LOGS -->
-        <div>
-          <div class="flex justify-between items-center mb-1.5">
-            <span class="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Console Diagnostic Logs</span>
-            <div class="flex items-center space-x-2">
-              <button onclick="copyDiagnosticLogs()" class="text-[10px] bg-brand-600 hover:bg-brand-500 text-white px-2 py-0.5 rounded font-medium flex items-center space-x-1 active:scale-95 transition">
-                <i class="fa-regular fa-copy"></i>
-                <span>Copy Logs</span>
-              </button>
-              <button onclick="clearDiagnosticLogs()" class="text-[10px] text-slate-400 hover:underline">Clear</button>
-            </div>
-          </div>
-          <div id="diagnostic-logs" class="bg-slate-900 rounded-xl p-2.5 font-mono text-[10px] text-emerald-400 h-32 overflow-y-auto border border-slate-800 space-y-1 leading-relaxed">
-            <div>[INIT] Diagnostics HUD mounted successfully...</div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- CURRENCY TOOLS MODAL -->
-  <div id="tools-modal" class="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm hidden flex items-center justify-center p-4">
-    <div class="glass-card w-full max-w-sm rounded-2xl p-5 border border-slate-200 dark:border-slate-700 shadow-2xl relative space-y-4">
-      <button onclick="closeToolsModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 dark:hover:text-white">
-        <i class="fa-solid fa-xmark text-lg"></i>
-      </button>
-      
-      <div class="flex items-center space-x-2">
-        <i class="fa-solid fa-calculator text-brand-600 dark:text-brand-400"></i>
-        <h3 class="text-base font-bold text-slate-900 dark:text-white">Currency Pair Converter</h3>
-      </div>
-
-      <div class="bg-slate-100 dark:bg-slate-800/80 p-3.5 rounded-xl border border-slate-200 dark:border-slate-700 space-y-3">
-        <!-- FROM CURRENCY SELECTION -->
-        <div>
-          <label class="block text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-1">From Amount & Currency</label>
-          <div class="flex items-center space-x-2">
-            <input type="number" id="calc-amount" value="100" step="any" oninput="calculateCurrency()" class="flex-1 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-800 dark:text-white font-mono">
-            <select id="calc-from" onchange="calculateCurrency()" class="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-2 py-2 text-xs text-slate-800 dark:text-white font-semibold">
-              <option value="SGD" selected>SGD (S$)</option>
-              <option value="USD">USD ($)</option>
-              <option value="EUR">EUR (€)</option>
-              <option value="GBP">GBP (£)</option>
-              <option value="JPY">JPY (¥)</option>
-              <option value="AUD">AUD (A$)</option>
-              <option value="CAD">CAD (C$)</option>
-              <option value="MYR">MYR (RM)</option>
-              <option value="THB">THB (฿)</option>
-            </select>
-          </div>
-        </div>
-
-        <!-- SWAP & DIRECTION INDICATOR -->
-        <div class="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 px-1">
-          <span>Target Currency:</span>
-          <button onclick="swapCurrencyPair()" class="p-1 px-2.5 rounded-lg bg-slate-200 dark:bg-slate-700 hover:bg-brand-500 hover:text-white text-slate-700 dark:text-slate-200 text-xs transition flex items-center space-x-1">
-            <i class="fa-solid fa-right-left"></i>
-            <span>Swap Pair</span>
-          </button>
-        </div>
-
-        <!-- TO CURRENCY SELECTION -->
-        <div>
-          <div class="flex items-center space-x-2">
-            <select id="calc-to" onchange="calculateCurrency()" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white font-semibold">
-              <option value="USD" selected>USD ($) - US Dollar</option>
-              <option value="SGD">SGD (S$) - Singapore Dollar</option>
-              <option value="EUR">EUR (€) - Euro</option>
-              <option value="GBP">GBP (£) - British Pound</option>
-              <option value="JPY">JPY (¥) - Japanese Yen</option>
-              <option value="AUD">AUD (A$) - Australian Dollar</option>
-              <option value="CAD">CAD (C$) - Canadian Dollar</option>
-              <option value="MYR">MYR (RM) - Malaysian Ringgit</option>
-              <option value="THB">THB (฿) - Thai Baht</option>
-            </select>
-          </div>
-        </div>
-
-        <!-- RESULT DISPLAY -->
-        <div class="bg-white dark:bg-slate-950 p-3 rounded-xl border border-slate-200 dark:border-slate-800 text-center space-y-1">
-          <span class="text-[10px] uppercase tracking-wider text-slate-400 font-semibold block">Converted Equivalent</span>
-          <span id="calc-result" class="text-xl font-bold font-mono text-brand-600 dark:text-brand-300">$74.63 USD</span>
-        </div>
-      </div>
-
-      <div class="pt-2 border-t border-slate-200 dark:border-slate-800 flex justify-between items-center text-xs">
-        <span id="calc-rate-label" class="text-[11px] text-slate-500 dark:text-slate-400 font-mono">1 SGD ≈ 0.746 USD</span>
-        <button onclick="closeToolsModal()" class="px-3 py-1 bg-brand-600 hover:bg-brand-500 text-white rounded-lg text-xs font-medium">Done</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- FLIGHT MODAL (ADD / EDIT) -->
-  <div id="flight-modal" class="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm hidden flex items-center justify-center p-4">
-    <div class="glass-card w-full max-w-sm rounded-2xl p-5 border border-slate-200 dark:border-slate-700 shadow-2xl relative">
-      <button onclick="closeFlightModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 dark:hover:text-white">
-        <i class="fa-solid fa-xmark text-lg"></i>
-      </button>
-      <h3 id="flight-modal-title" class="text-base font-bold text-slate-900 dark:text-white mb-3">Add Flight Segment</h3>
-      <form id="flight-form" onsubmit="saveFlight(event)" class="space-y-3">
-        <input type="hidden" id="flight-id">
-        <div>
-          <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Leg Type</label>
-          <select id="flight-type" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white focus:outline-none focus:border-brand-500">
-            <option value="Outbound">Outbound Flight</option>
-            <option value="Transit">Transit / Connection</option>
-            <option value="Return">Return Flight</option>
-          </select>
-        </div>
-        <div class="grid grid-cols-2 gap-2">
-          <div>
-            <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Airline</label>
-            <input type="text" id="flight-airline" required placeholder="Singapore Airlines" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white">
-          </div>
-          <div>
-            <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Flight No.</label>
-            <input type="text" id="flight-num" required placeholder="SQ024" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white">
-          </div>
-        </div>
-        <div>
-          <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Route (From -> To)</label>
-          <input type="text" id="flight-route" required placeholder="SIN -> MCO" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white">
-        </div>
-        <div class="grid grid-cols-2 gap-2">
-          <div>
-            <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Departure</label>
-            <input type="text" id="flight-dept" placeholder="Nov 10, 09:15 AM" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white">
-          </div>
-          <div>
-            <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Arrival</label>
-            <input type="text" id="flight-arr" placeholder="Nov 10, 07:30 PM" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white">
-          </div>
-        </div>
-        <div class="grid grid-cols-2 gap-2">
-          <div>
-            <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">PNR / Confirm</label>
-            <input type="text" id="flight-pnr" placeholder="SQ982X" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white font-mono uppercase">
-          </div>
-          <div>
-            <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Gate / Seat</label>
-            <input type="text" id="flight-gate" placeholder="Gate B12, 32K" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white">
-          </div>
-        </div>
-        <div class="flex space-x-2 pt-2">
-          <button type="button" onclick="closeFlightModal()" class="flex-1 py-2 bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-medium">Cancel</button>
-          <button type="submit" class="flex-1 py-2 bg-brand-600 hover:bg-brand-500 text-white rounded-xl text-xs font-medium">Save Flight</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- HOTEL MODAL (ADD / EDIT) -->
-  <div id="hotel-modal" class="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm hidden flex items-center justify-center p-4">
-    <div class="glass-card w-full max-w-sm rounded-2xl p-5 border border-slate-200 dark:border-slate-700 shadow-2xl relative">
-      <button onclick="closeHotelModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 dark:hover:text-white">
-        <i class="fa-solid fa-xmark text-lg"></i>
-      </button>
-      <h3 id="hotel-modal-title" class="text-base font-bold text-slate-900 dark:text-white mb-3">Add Accommodation</h3>
-      <form id="hotel-form" onsubmit="saveHotel(event)" class="space-y-3">
-        <input type="hidden" id="hotel-id">
-        <div>
-          <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Property Name</label>
-          <input type="text" id="hotel-name" required placeholder="Universal Cabana Bay Resort" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white">
-        </div>
-        <div class="grid grid-cols-2 gap-2">
-          <div>
-            <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">City / Area</label>
-            <input type="text" id="hotel-area" placeholder="Orlando" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white">
-          </div>
-          <div>
-            <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Confirmation</label>
-            <input type="text" id="hotel-pnr" placeholder="HTL-9921" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white font-mono">
-          </div>
-        </div>
-        <div class="grid grid-cols-2 gap-2">
-          <div>
-            <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Check-In</label>
-            <input type="text" id="hotel-in" placeholder="Nov 10 (3 PM)" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white">
-          </div>
-          <div>
-            <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Check-Out</label>
-            <input type="text" id="hotel-out" placeholder="Nov 17 (11 AM)" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white">
-          </div>
-        </div>
-        <div>
-          <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Address / Notes</label>
-          <input type="text" id="hotel-address" placeholder="6523 Hollywood Way, Orlando, FL" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white">
-        </div>
-        <div class="flex space-x-2 pt-2">
-          <button type="button" onclick="closeHotelModal()" class="flex-1 py-2 bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-medium">Cancel</button>
-          <button type="submit" class="flex-1 py-2 bg-brand-600 hover:bg-brand-500 text-white rounded-xl text-xs font-medium">Save Hotel</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- ITINERARY MODAL (ADD / EDIT) -->
-  <div id="itinerary-modal" class="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm hidden flex items-center justify-center p-4">
-    <div class="glass-card w-full max-w-sm rounded-2xl p-5 border border-slate-200 dark:border-slate-700 shadow-2xl relative">
-      <button onclick="closeItineraryModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 dark:hover:text-white">
-        <i class="fa-solid fa-xmark text-lg"></i>
-      </button>
-      <h3 id="itinerary-modal-title" class="text-base font-bold text-slate-900 dark:text-white mb-3">Add Itinerary Event</h3>
-      <form onsubmit="saveItineraryItem(event)" class="space-y-3">
-        <input type="hidden" id="itin-id">
-        <div>
-          <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Day / Date Label</label>
-          <input type="text" id="itin-day" required placeholder="Day 2 - Nov 11" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white">
-        </div>
-        <div class="grid grid-cols-3 gap-2">
-          <div>
-            <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Time</label>
-            <input type="text" id="itin-time" required placeholder="09:00 AM" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white">
-          </div>
-          <div class="col-span-2">
-            <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Activity Title</label>
-            <input type="text" id="itin-title" required placeholder="Universal Studios Florida" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white">
-          </div>
-        </div>
-        <div>
-          <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Location / Notes</label>
-          <input type="text" id="itin-notes" placeholder="Harry Potter Diagon Alley & Rides" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white">
-        </div>
-        <div class="flex space-x-2 pt-2">
-          <button type="button" onclick="closeItineraryModal()" class="flex-1 py-2 bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-medium">Cancel</button>
-          <button type="submit" class="flex-1 py-2 bg-brand-600 hover:bg-brand-500 text-white rounded-xl text-xs font-medium">Save Event</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- TRIP OVERVIEW EDIT MODAL -->
-  <div id="trip-edit-modal" class="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm hidden flex items-center justify-center p-4">
-    <div class="glass-card w-full max-w-sm rounded-2xl p-5 border border-slate-200 dark:border-slate-700 shadow-2xl relative">
-      <button onclick="closeTripEditModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 dark:hover:text-white">
-        <i class="fa-solid fa-xmark text-lg"></i>
-      </button>
-      <h3 class="text-base font-bold text-slate-900 dark:text-white mb-3">Edit Trip Overview</h3>
-      <form onsubmit="saveTripOverview(event)" class="space-y-3">
-        <div>
-          <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Trip Destination</label>
-          <input type="text" id="trip-dest-input" required placeholder="Orlando & New York, USA" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white">
-        </div>
-        <div>
-          <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Dates Range</label>
-          <input type="text" id="trip-dates-input" required placeholder="Nov 10 - Nov 24, 2026" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white">
-        </div>
-        <div>
-          <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Overall Budget Limit (SGD S$)</label>
-          <input type="number" id="trip-budget-input" required placeholder="8000" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white">
-        </div>
-        <div class="flex space-x-2 pt-2">
-          <button type="button" onclick="closeTripEditModal()" class="flex-1 py-2 bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-medium">Cancel</button>
-          <button type="submit" class="flex-1 py-2 bg-brand-600 hover:bg-brand-500 text-white rounded-xl text-xs font-medium">Update Overview</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- EXPENSE MODAL (ADD / EDIT) -->
-  <div id="expense-modal" class="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm hidden flex items-center justify-center p-4">
-    <div class="glass-card w-full max-w-sm rounded-2xl p-5 border border-slate-200 dark:border-slate-700 shadow-2xl relative">
-      <button onclick="closeExpenseModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 dark:hover:text-white">
-        <i class="fa-solid fa-xmark text-lg"></i>
-      </button>
-      <h3 id="expense-modal-title" class="text-base font-bold text-slate-900 dark:text-white mb-3">Add Expense Item</h3>
-      <form onsubmit="saveExpenseItem(event)" class="space-y-3">
-        <input type="hidden" id="exp-id">
-        <div>
-          <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Category</label>
-          <select id="exp-category" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white focus:outline-none focus:border-brand-500">
-            <option value="Flights">Flights</option>
-            <option value="Lodging">Lodging</option>
-            <option value="Dining">Dining & Food</option>
-            <option value="Activities">Activities & Tours</option>
-            <option value="Transit">Transport & Rides</option>
-            <option value="Shopping">Shopping & Misc</option>
-          </select>
-        </div>
-        <div class="grid grid-cols-2 gap-2">
-          <div>
-            <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Item Title</label>
-            <input type="text" id="exp-title" required placeholder="Universal Studios Pass" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white">
-          </div>
-          <div>
-            <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Cost (SGD S$)</label>
-            <input type="number" step="0.01" id="exp-amount" required placeholder="250.00" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white">
-          </div>
-        </div>
-        <div>
-          <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Date</label>
-          <input type="text" id="exp-date" placeholder="Nov 11" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white">
-        </div>
-        <div class="flex space-x-2 pt-2">
-          <button type="button" onclick="closeExpenseModal()" class="flex-1 py-2 bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-medium">Cancel</button>
-          <button type="submit" class="flex-1 py-2 bg-brand-600 hover:bg-brand-500 text-white rounded-xl text-xs font-medium">Save Expense</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- TO-DO MODAL (ADD / EDIT) -->
-  <div id="todo-modal" class="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm hidden flex items-center justify-center p-4">
-    <div class="glass-card w-full max-w-sm rounded-2xl p-5 border border-slate-200 dark:border-slate-700 shadow-2xl relative">
-      <button onclick="closeTodoModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 dark:hover:text-white">
-        <i class="fa-solid fa-xmark text-lg"></i>
-      </button>
-      <h3 id="todo-modal-title" class="text-base font-bold text-slate-900 dark:text-white mb-3">Add Task / Packing Item</h3>
-      <form onsubmit="saveTodoItem(event)" class="space-y-3">
-        <input type="hidden" id="todo-id">
-        <div>
-          <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Task Category</label>
-          <select id="todo-cat" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white focus:outline-none focus:border-brand-500">
-            <option value="Documents">Documents & Visas</option>
-            <option value="Booking">Bookings & Reservations</option>
-            <option value="Packing">Packing List</option>
-            <option value="Misc">Miscellaneous</option>
-          </select>
-        </div>
-        <div>
-          <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Task Title</label>
-          <input type="text" id="todo-title" required placeholder="Apply for US ESTA Visa Waiver" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white">
-        </div>
-        <div class="flex space-x-2 pt-2">
-          <button type="button" onclick="closeTodoModal()" class="flex-1 py-2 bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-medium">Cancel</button>
-          <button type="submit" class="flex-1 py-2 bg-brand-600 hover:bg-brand-500 text-white rounded-xl text-xs font-medium">Save Task</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <script>
-    // Standardized fixed App Identifier for cross-session/browser cloud sync
-    const appId = typeof __app_id !== 'undefined' ? __app_id : 'zentravel-planner-v1';
-
-    // Firebase Config with fallback
-    const defaultFirebaseConfig = {
-      apiKey: "AIzaSyA2wyg7enqbm29V4v31hvNj1ERKdyZ41p4",
-      authDomain: "my-zen-travel.firebaseapp.com",
-      projectId: "my-zen-travel",
-      storageBucket: "my-zen-travel.firebasestorage.app",
-      messagingSenderId: "730995974564",
-      appId: "1:730995974564:web:0a30fb7fad38ad962aa131"
-    };
-
-    // Helper: extract URL query parameter ?vault=ZEN-XXXX for auto device sync
-    function getUrlVaultParam() {
-      try {
-        const params = new URLSearchParams(window.location.search);
-        return params.get('vault') || params.get('v');
-      } catch(e) {
-        return null;
-      }
-    }
-
-    // Global State Variables
-    let activeTab = 'dashboard';
-    let urlVault = getUrlVaultParam();
-    let vaultId = urlVault ? urlVault.toUpperCase() : (localStorage.getItem('zentravel_vault_id') || 'ZEN-8492');
-    if (urlVault) {
-      localStorage.setItem('zentravel_vault_id', vaultId);
-    }
-
-    let db = null;
-    let auth = null;
-    let currentUser = null;
-    let unsubscribeVaultListener = null;
-    let unsubscribeUserListener = null;
-
-    // Exchange Rates Table (Base: USD = 1.0)
-    const exchangeRatesToUSD = {
-      USD: 1.0,
-      SGD: 1.34,
-      EUR: 0.92,
-      GBP: 0.78,
-      JPY: 154.20,
-      AUD: 1.52,
-      CAD: 1.36,
-      MYR: 4.42,
-      THB: 36.50
-    };
-
-    // Default Sample Data: Orlando & New York Trip with Home Currency = SGD
-    let tripData = {
-      destination: "Orlando & New York, USA",
-      dates: "Nov 10 - Nov 24, 2026",
-      homeCurrency: "SGD",
-      totalBudget: 8000,
-      flights: [
-        {
-          id: 'f-1',
-          type: 'Outbound',
-          airline: 'Singapore Airlines',
-          flightNum: 'SQ024',
-          route: 'SIN -> MCO',
-          dept: 'Nov 10, 09:15 AM',
-          arr: 'Nov 10, 07:30 PM',
-          pnr: 'SQ982X',
-          gate: 'Gate B12, 32K'
-        },
-        {
-          id: 'f-2',
-          type: 'Transit',
-          airline: 'Delta Air Lines',
-          flightNum: 'DL1420',
-          route: 'MCO -> JFK',
-          dept: 'Nov 17, 11:00 AM',
-          arr: 'Nov 17, 01:25 PM',
-          pnr: 'DL441Y',
-          gate: 'Gate 71, 18A'
-        },
-        {
-          id: 'f-3',
-          type: 'Return',
-          airline: 'Singapore Airlines',
-          flightNum: 'SQ023',
-          route: 'JFK -> SIN',
-          dept: 'Nov 24, 08:50 PM',
-          arr: 'Nov 26, 06:15 AM',
-          pnr: 'SQ982X',
-          gate: 'Gate A04, 32J'
-        }
-      ],
-      hotels: [
-        {
-          id: 'h-1',
-          name: "Universal Cabana Bay Resort",
-          area: 'Orlando',
-          pnr: 'CB-8821',
-          checkIn: 'Nov 10 (3:00 PM)',
-          checkOut: 'Nov 17 (11:00 AM)',
-          address: '6523 Hollywood Way, Orlando, FL'
-        },
-        {
-          id: 'h-2',
-          name: 'The Manhattan at Times Square',
-          area: 'New York City',
-          pnr: 'MTS-4091',
-          checkIn: 'Nov 17 (3:00 PM)',
-          checkOut: 'Nov 24 (11:00 AM)',
-          address: '790 7th Ave, New York, NY'
-        }
-      ],
-      itinerary: [
-        { id: 'i-1', day: 'Day 1 - Nov 10', time: '08:00 PM', title: 'Arrive Orlando & Hotel Check-in', notes: 'Unwind at Cabana Bay Pool & Diner', done: true },
-        { id: 'i-2', day: 'Day 2 - Nov 11', time: '09:00 AM', title: 'Universal Studios & Islands of Adventure', notes: 'Park-to-Park pass, Harry Potter Diagon Alley', done: true },
-        { id: 'i-3', day: 'Day 3 - Nov 12', time: '08:30 AM', title: 'Walt Disney World - Magic Kingdom', notes: 'Fireworks show at Cinderella Castle', done: true },
-        { id: 'i-4', day: 'Day 5 - Nov 14', time: '10:00 AM', title: 'Kennedy Space Center Tour', notes: 'Rocket Garden & Space Shuttle Atlantis', done: false },
-        { id: 'i-5', day: 'Day 8 - Nov 17', time: '03:30 PM', title: 'Check-in NYC Hotel & Times Square Walk', notes: 'Walk through Broadway & Rockefeller Center', done: false },
-        { id: 'i-6', day: 'Day 9 - Nov 18', time: '09:30 AM', title: 'Statue of Liberty & Ellis Island', notes: 'Ferry booked from Battery Park', done: false },
-        { id: 'i-7', day: 'Day 10 - Nov 19', time: '02:00 PM', title: 'Broadway Show - The Lion King', notes: 'Minskoff Theatre Orchestra Seats', done: false }
-      ],
-      expenses: [
-        { id: 'e-1', category: 'Flights', title: 'SQ Roundtrip Singapore-US', amount: 2250.00, date: 'Oct 01' },
-        { id: 'e-2', category: 'Lodging', title: 'Universal Cabana Bay (7 Nights)', amount: 1688.00, date: 'Oct 05' },
-        { id: 'e-3', category: 'Lodging', title: 'NYC Times Square Hotel (7 Nights)', amount: 2251.00, date: 'Oct 10' },
-        { id: 'e-4', category: 'Activities', title: 'Disney & Universal Theme Passes', amount: 777.00, date: 'Oct 12' },
-        { id: 'e-5', category: 'Transit', title: 'MCO to JFK Flight Segment', amount: 248.00, date: 'Oct 15' },
-        { id: 'e-6', category: 'Dining', title: 'Dining & Food Budget', amount: 650.00, date: 'Nov 12' }
-      ],
-      todos: [
-        { id: 't-1', category: 'Documents', title: 'Apply for US ESTA Visa Waiver online', done: true },
-        { id: 't-2', category: 'Documents', title: 'Check passport expiration date (>6 months)', done: true },
-        { id: 't-3', category: 'Booking', title: 'Purchase Universal Express Unlimited Pass', done: true },
-        { id: 't-4', category: 'Packing', title: 'US Type A/B Power Adapters & Portable Power Bank', done: false },
-        { id: 't-5', category: 'Booking', title: 'Reserve Broadway Show Tickets for NYC', done: false },
-        { id: 't-6', category: 'Misc', title: 'Activate overseas card spending in banking app', done: false }
-      ]
-    };
-
-    // Strictly adheres to Firestore Path: /artifacts/{appId}/public/data/vaults/{vaultId}
-    function getVaultDocRef(vId) {
-      if (!db) return null;
-      return db.collection('artifacts').doc(appId).collection('public').doc('data').collection('vaults').doc(vId);
-    }
-
-    // Strictly adheres to Firestore Path: /artifacts/{appId}/public/data/users/{userId}
-    function getUserDocRef(uid) {
-      if (!db) return null;
-      return db.collection('artifacts').doc(appId).collection('public').doc('data').collection('users').doc(uid);
-    }
-
-    function initFirebase() {
-      try {
-        let finalConfig = defaultFirebaseConfig;
-        if (typeof __firebase_config !== 'undefined') {
-          try {
-            finalConfig = JSON.parse(__firebase_config);
-          } catch(e) {}
-        }
-
-        if (!firebase.apps.length) {
-          firebase.initializeApp(finalConfig);
-        }
-        db = firebase.firestore();
-        auth = firebase.auth();
-
-        logDiagnostic("[FIREBASE] Initialized with API Key: " + finalConfig.apiKey.substring(0, 8) + "...");
-
-        // Authenticate FIRST before listening/saving
-        const initialToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
-        if (initialToken) {
-          auth.signInWithCustomToken(initialToken).catch(() => auth.signInAnonymously());
-        } else {
-          auth.signInAnonymously();
-        }
-
-        auth.onAuthStateChanged((user) => {
-          if (user) {
-            currentUser = user;
-            updateUserUI(user);
-            logDiagnostic(`[AUTH] Authenticated as: ${user.isAnonymous ? 'Anonymous' : (user.email || 'Google User')} (UID: ${user.uid.substring(0, 8)}...)`);
             
-            if (!user.isAnonymous) {
-              // Real-time listener for user profile to pair same Google Account across devices
-              bindGoogleAccountVaultSync(user);
-            } else {
-              if (unsubscribeUserListener) {
-                unsubscribeUserListener();
-                unsubscribeUserListener = null;
-              }
-              setupVaultSync();
-            }
-          } else {
-            currentUser = null;
-            updateUserUI(null);
-            logDiagnostic("[AUTH] Signed out");
-          }
-        });
-      } catch (err) {
-        logDiagnostic(`[ERROR] Firebase init failed: ${err.message}`);
-        loadFromLocalStorage();
-        renderActiveTab();
-      }
-    }
-
-    function bindGoogleAccountVaultSync(user) {
-      const userRef = getUserDocRef(user.uid);
-      if (!userRef) return;
-
-      if (unsubscribeUserListener) {
-        unsubscribeUserListener();
-      }
-
-      // Automatically attach Google account real-time doc snapshot
-      unsubscribeUserListener = userRef.onSnapshot((docSnap) => {
-        if (docSnap.exists && docSnap.data()) {
-          const uData = docSnap.data();
-          const targetVault = uData.activeVaultId || ('GOOG-' + user.uid.substring(0, 6).toUpperCase());
-          logDiagnostic(`[GOOGLE SYNC] User doc update: Vault ID is ${targetVault}`);
-          if (vaultId !== targetVault) {
-            vaultId = targetVault;
-            localStorage.setItem('zentravel_vault_id', vaultId);
-            updateHeaderVaultBadge();
-            showToast(`Synced Google Vault: ${vaultId}`);
-          }
-        } else {
-          // Default Google Vault tied to user UID
-          const defaultGoogleVault = 'GOOG-' + user.uid.substring(0, 6).toUpperCase();
-          logDiagnostic(`[GOOGLE SYNC] Creating user document with default vault ${defaultGoogleVault}`);
-          userRef.set({
-            email: user.email,
-            displayName: user.displayName || 'Google User',
-            activeVaultId: defaultGoogleVault,
-            createdAt: firebase.firestore.FieldValue.serverTimestamp()
-          }, { merge: true });
-
-          vaultId = defaultGoogleVault;
-          localStorage.setItem('zentravel_vault_id', vaultId);
-          updateHeaderVaultBadge();
-        }
-        setupVaultSync();
-      }, (error) => {
-        logDiagnostic(`[GOOGLE SYNC ERROR] ${error.message}`);
-        setupVaultSync();
-      });
-    }
-
-    function updateHeaderVaultBadge() {
-      const headerEl = document.getElementById('header-vault-id');
-      const modalEl = document.getElementById('modal-vault-id');
-      const hudEl = document.getElementById('hud-vault-id');
-      if (headerEl) headerEl.innerText = vaultId;
-      if (modalEl) modalEl.innerText = vaultId;
-      if (hudEl) hudEl.innerText = vaultId;
-    }
-
-    function setupVaultSync() {
-      if (!db || !currentUser) return;
-
-      if (unsubscribeVaultListener) {
-        unsubscribeVaultListener();
-        unsubscribeVaultListener = null;
-      }
-
-      updateHeaderVaultBadge();
-      const docRef = getVaultDocRef(vaultId);
-      if (!docRef) return;
-
-      const pathStr = `/artifacts/${appId}/public/data/vaults/${vaultId}`;
-      const pathEl = document.getElementById('hud-firestore-path');
-      if (pathEl) pathEl.innerText = pathStr;
-      
-      const syncIndicator = document.getElementById('sync-indicator');
-      if (syncIndicator) syncIndicator.className = "w-2 h-2 rounded-full bg-amber-400 animate-pulse";
-      
-      logDiagnostic(`[SYNC] Listening to cloud vault path: ${pathStr}`);
-
-      // Multi-device realtime synchronization listener
-      unsubscribeVaultListener = docRef.onSnapshot((docSnap) => {
-        if (docSnap.exists) {
-          const remoteData = docSnap.data();
-          if (remoteData && remoteData.tripData) {
-            // Update local memory and re-render across devices
-            tripData = remoteData.tripData;
-            saveToLocalStorage();
-            renderActiveTab();
-            logDiagnostic(`[SYNC] Realtime update applied for Vault: ${vaultId}`);
-          }
-        } else {
-          logDiagnostic(`[SYNC] Vault ${vaultId} missing on cloud. Seeding current trip data...`);
-          saveTripToVault();
-        }
-        if (syncIndicator) syncIndicator.className = "w-2 h-2 rounded-full bg-emerald-500";
-      }, (error) => {
-        logDiagnostic(`[SYNC ERROR] ${error.message}`);
-        if (syncIndicator) syncIndicator.className = "w-2 h-2 rounded-full bg-rose-500";
-        showToast(`Sync error: ${error.message}`, 'error');
-      });
-    }
-
-    function saveTripToVault() {
-      saveToLocalStorage();
-      if (!db || !currentUser) return;
-
-      const docRef = getVaultDocRef(vaultId);
-      if (!docRef) return;
-
-      const syncIndicator = document.getElementById('sync-indicator');
-      if (syncIndicator) syncIndicator.className = "w-2 h-2 rounded-full bg-amber-400 animate-pulse";
-
-      docRef.set({
-        tripData: tripData,
-        lastUpdated: firebase.firestore.FieldValue.serverTimestamp(),
-        updatedBy: currentUser.uid,
-        updatedByEmail: currentUser.email || 'Anonymous'
-      }, { merge: true })
-      .then(() => {
-        logDiagnostic(`[SAVE] Vault ${vaultId} successfully written to cloud`);
-        if (syncIndicator) syncIndicator.className = "w-2 h-2 rounded-full bg-emerald-500";
-      })
-      .catch((err) => {
-        logDiagnostic(`[SAVE ERROR] Vault ${vaultId}: ${err.message}`);
-        if (syncIndicator) syncIndicator.className = "w-2 h-2 rounded-full bg-rose-500";
-      });
-
-      if (currentUser && !currentUser.isAnonymous) {
-        const userRef = getUserDocRef(currentUser.uid);
-        if (userRef) {
-          userRef.set({
-            activeVaultId: vaultId,
-            lastActive: firebase.firestore.FieldValue.serverTimestamp()
-          }, { merge: true }).catch(() => {});
-        }
-      }
-    }
-
-    function saveToLocalStorage() {
-      try {
-        localStorage.setItem('zentravel_trip_data', JSON.stringify(tripData));
-        localStorage.setItem('zentravel_vault_id', vaultId);
-      } catch(e) {}
-    }
-
-    function loadFromLocalStorage() {
-      try {
-        const saved = localStorage.getItem('zentravel_trip_data');
-        if (saved) {
-          tripData = JSON.parse(saved);
-        }
-      } catch(e) {}
-    }
-
-    function joinVault() {
-      const input = document.getElementById('vault-input');
-      if (!input || !input.value.trim()) {
-        showToast("Please enter a valid Vault Code", "error");
-        return;
-      }
-      const newCode = input.value.trim().toUpperCase();
-      vaultId = newCode;
-      localStorage.setItem('zentravel_vault_id', vaultId);
-      updateHeaderVaultBadge();
-
-      if (currentUser && !currentUser.isAnonymous) {
-        const userRef = getUserDocRef(currentUser.uid);
-        if (userRef) {
-          userRef.set({ activeVaultId: vaultId }, { merge: true });
-        }
-      }
-
-      setupVaultSync();
-      closeVaultModal();
-      showToast(`Joined Cloud Vault: ${vaultId}`);
-    }
-
-    function generateNewVault() {
-      const randomCode = 'ZEN-' + Math.floor(1000 + Math.random() * 9000);
-      vaultId = randomCode;
-      localStorage.setItem('zentravel_vault_id', vaultId);
-      updateHeaderVaultBadge();
-
-      if (currentUser && !currentUser.isAnonymous) {
-        const userRef = getUserDocRef(currentUser.uid);
-        if (userRef) {
-          userRef.set({ activeVaultId: vaultId }, { merge: true });
-        }
-      }
-
-      saveTripToVault();
-      setupVaultSync();
-      closeVaultModal();
-      showToast(`Created New Vault: ${vaultId}`);
-    }
-
-    function copyVaultCode() {
-      copyToClipboard(vaultId, "Vault Code copied to clipboard!");
-    }
-
-    function copySyncUrl() {
-      const baseUrl = window.location.href.split('?')[0];
-      const shareUrl = `${baseUrl}?vault=${vaultId}`;
-      copyToClipboard(shareUrl, "Device Sync Link copied! Open on phone to pair.");
-    }
-
-    function copyToClipboard(text, successMsg) {
-      const tempTextArea = document.createElement("textarea");
-      tempTextArea.value = text;
-      document.body.appendChild(tempTextArea);
-      tempTextArea.select();
-      try {
-        document.execCommand('copy');
-        showToast(successMsg);
-      } catch (err) {
-        showToast("Failed to copy to clipboard", "error");
-      }
-      document.body.removeChild(tempTextArea);
-    }
-
-    function signInWithGoogle() {
-      if (!auth) {
-        showToast("Auth SDK not ready", "error");
-        return;
-      }
-      const provider = new firebase.auth.GoogleAuthProvider();
-      logDiagnostic("[AUTH] Google Sign-In popup requested...");
-      auth.signInWithPopup(provider)
-        .then((result) => {
-          showToast(`Welcome ${result.user.displayName || 'Traveler'}!`);
-          logDiagnostic(`[AUTH] Google Sign-In success: ${result.user.email}`);
-        })
-        .catch((error) => {
-          logDiagnostic(`[AUTH ERROR] Google Sign-In: ${error.message}`);
-          showToast(`Google Sign-In failed: ${error.message}`, 'error');
-        });
-    }
-
-    function signOutUser() {
-      if (!auth) return;
-      auth.signOut().then(() => {
-        showToast("Signed out. Re-authenticating anonymously...");
-        if (unsubscribeUserListener) {
-          unsubscribeUserListener();
-          unsubscribeUserListener = null;
-        }
-        auth.signInAnonymously();
-      });
-    }
-
-    function updateUserUI(user) {
-      const modeEl = document.getElementById('hud-auth-mode');
-      const uidEl = document.getElementById('hud-user-uid');
-      const nameEl = document.getElementById('hud-user-name');
-      const emailEl = document.getElementById('hud-user-email');
-      const avatarEl = document.getElementById('hud-user-avatar');
-      const signinBtn = document.getElementById('google-signin-btn');
-      const signoutBtn = document.getElementById('google-signout-btn');
-      const headerUserIcon = document.getElementById('header-user-icon');
-
-      if (user && !user.isAnonymous) {
-        if (modeEl) modeEl.innerText = "Google User";
-        if (uidEl) uidEl.innerText = user.uid;
-        if (nameEl) nameEl.innerText = user.displayName || "Google User";
-        if (emailEl) emailEl.innerText = user.email || "";
-        
-        if (avatarEl) {
-          if (user.photoURL) {
-            avatarEl.innerHTML = `<img src="${user.photoURL}" class="w-full h-full object-cover">`;
-          } else {
-            avatarEl.innerHTML = `<i class="fa-solid fa-user-check text-brand-500"></i>`;
-          }
-        }
-
-        if (signinBtn) signinBtn.classList.add('hidden');
-        if (signoutBtn) signoutBtn.classList.remove('hidden');
-        if (headerUserIcon) headerUserIcon.className = "fa-solid fa-user-check text-xs text-brand-500 dark:text-brand-400";
-      } else {
-        if (modeEl) modeEl.innerText = user ? "Anonymous" : "Disconnected";
-        if (uidEl) uidEl.innerText = user ? user.uid.substring(0, 12) + "..." : "None";
-        if (nameEl) nameEl.innerText = "Anonymous Traveler";
-        if (emailEl) emailEl.innerText = "Sign in to backup to Google Account";
-        if (avatarEl) avatarEl.innerHTML = `<i class="fa-solid fa-user"></i>`;
-
-        if (signinBtn) signinBtn.classList.remove('hidden');
-        if (signoutBtn) signoutBtn.classList.add('hidden');
-        if (headerUserIcon) headerUserIcon.className = "fa-solid fa-user-gear text-xs";
-      }
-    }
-
-    function reauthAnon() {
-      if (!auth) return;
-      auth.signInAnonymously().then(() => {
-        showToast("Re-authenticated anonymously");
-      });
-    }
-
-    function pingVaultWrite() {
-      saveTripToVault();
-      showToast("Triggered Cloud Vault Sync!");
-    }
-
-    function logDiagnostic(msg) {
-      const logsEl = document.getElementById('diagnostic-logs');
-      if (!logsEl) return;
-      const timeStr = new Date().toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
-      const entry = document.createElement('div');
-      entry.innerText = `[${timeStr}] ${msg}`;
-      logsEl.appendChild(entry);
-      logsEl.scrollTop = logsEl.scrollHeight;
-    }
-
-    function copyDiagnosticLogs() {
-      const logsEl = document.getElementById('diagnostic-logs');
-      const text = logsEl.innerText || logsEl.textContent;
-      copyToClipboard(text, "Diagnostic logs copied to clipboard!");
-    }
-
-    function clearDiagnosticLogs() {
-      const logsEl = document.getElementById('diagnostic-logs');
-      if (logsEl) logsEl.innerHTML = '';
-    }
-
-    function showToast(message, type = 'info') {
-      const container = document.getElementById('toast-container');
-      if (!container) return;
-
-      const toast = document.createElement('div');
-      const bgColor = type === 'error' ? 'bg-rose-600' : 'bg-brand-600';
-      toast.className = `${bgColor} text-white text-xs py-2 px-3.5 rounded-xl shadow-xl flex items-center justify-between space-x-2 transition-all duration-300 transform translate-y-2 opacity-0 pointer-events-auto`;
-      toast.innerHTML = `
-        <div class="flex items-center space-x-2">
-          <i class="${type === 'error' ? 'fa-solid fa-circle-exclamation' : 'fa-solid fa-circle-check'}"></i>
-          <span>${message}</span>
-        </div>
-      `;
-
-      container.appendChild(toast);
-      setTimeout(() => {
-        toast.classList.remove('translate-y-2', 'opacity-0');
-      }, 10);
-
-      setTimeout(() => {
-        toast.classList.add('translate-y-2', 'opacity-0');
-        setTimeout(() => toast.remove(), 300);
-      }, 3000);
-    }
-
-    function toggleTheme() {
-      const htmlEl = document.documentElement;
-      const themeIcon = document.getElementById('theme-icon');
-      if (htmlEl.classList.contains('dark')) {
-        htmlEl.classList.remove('dark');
-        if (themeIcon) themeIcon.className = 'fa-solid fa-sun text-xs text-amber-500';
-      } else {
-        htmlEl.classList.add('dark');
-        if (themeIcon) themeIcon.className = 'fa-solid fa-moon text-xs';
-      }
-    }
-
-    function switchTab(tab) {
-      activeTab = tab;
-      document.querySelectorAll('.nav-btn').forEach(btn => {
-        btn.classList.remove('text-brand-600', 'dark:text-brand-400', 'font-bold');
-        btn.classList.add('text-slate-500', 'dark:text-slate-400');
-      });
-
-      const activeNav = document.getElementById(`nav-${tab}`);
-      if (activeNav) {
-        activeNav.classList.remove('text-slate-500', 'dark:text-slate-400');
-        activeNav.classList.add('text-brand-600', 'dark:text-brand-400', 'font-bold');
-      }
-
-      renderActiveTab();
-    }
-
-    function renderActiveTab() {
-      const container = document.getElementById('content-container');
-      if (!container) return;
-
-      if (activeTab === 'dashboard') {
-        container.innerHTML = renderDashboardView();
-      } else if (activeTab === 'logistics') {
-        container.innerHTML = renderLogisticsView();
-      } else if (activeTab === 'itinerary') {
-        container.innerHTML = renderItineraryView();
-      } else if (activeTab === 'budget') {
-        container.innerHTML = renderBudgetView();
-      } else if (activeTab === 'todo') {
-        container.innerHTML = renderTodoView();
-      }
-    }
-
-    function renderDashboardView() {
-      const spent = tripData.expenses.reduce((sum, e) => sum + Number(e.amount || 0), 0);
-      const percentSpent = Math.min(Math.round((spent / tripData.totalBudget) * 100), 100);
-      const completedTodos = tripData.todos.filter(t => t.done).length;
-      const totalTodos = tripData.todos.length;
-      const completedItin = tripData.itinerary.filter(i => i.done).length;
-
-      return `
-        <!-- TRIP HERO CARD -->
-        <div class="glass-card rounded-2xl p-4 relative overflow-hidden border border-brand-500/20 glow-accent">
-          <div class="absolute -right-6 -bottom-6 w-32 h-32 rounded-full bg-brand-500/10 blur-2xl"></div>
-          
-          <div class="flex justify-between items-start mb-3">
-            <div>
-              <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-brand-500/15 text-brand-700 dark:text-brand-300 border border-brand-500/30">
-                Upcoming Journey
-              </span>
-              <h2 class="text-xl font-bold text-slate-900 dark:text-white mt-1.5 flex items-center space-x-2">
-                <span>${tripData.destination}</span>
-              </h2>
-              <p class="text-xs text-slate-500 dark:text-slate-400 font-medium flex items-center mt-0.5">
-                <i class="fa-regular fa-calendar mr-1.5 text-brand-500"></i> ${tripData.dates}
-              </p>
-            </div>
-            <button onclick="openTripEditModal()" class="p-2 rounded-xl bg-slate-200/80 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition active:scale-95">
-              <i class="fa-solid fa-pen-to-square text-xs"></i>
-            </button>
-          </div>
-
-          <!-- SUMMARY ROW -->
-          <div class="grid grid-cols-3 gap-2 mt-4 pt-3 border-t border-slate-200 dark:border-slate-800 text-center">
-            <div class="p-2 rounded-xl bg-slate-100/80 dark:bg-slate-800/50">
-              <span class="text-xs text-slate-500 dark:text-slate-400 block font-medium">Outbound</span>
-              <span class="text-sm font-bold text-slate-800 dark:text-slate-200 font-mono">${tripData.flights[0] ? tripData.flights[0].flightNum : 'N/A'}</span>
-            </div>
-            <div class="p-2 rounded-xl bg-slate-100/80 dark:bg-slate-800/50">
-              <span class="text-xs text-slate-500 dark:text-slate-400 block font-medium">Spent (SGD)</span>
-              <span class="text-sm font-bold text-brand-600 dark:text-brand-400 font-mono">S$${spent.toFixed(0)}</span>
-            </div>
-            <div class="p-2 rounded-xl bg-slate-100/80 dark:bg-slate-800/50">
-              <span class="text-xs text-slate-500 dark:text-slate-400 block font-medium">Tasks</span>
-              <span class="text-sm font-bold text-slate-800 dark:text-slate-200 font-mono">${completedTodos}/${totalTodos}</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- QUICK ACTIONS & STATS -->
-        <div class="grid grid-cols-2 gap-3">
-          <div onclick="switchTab('itinerary')" class="glass-card p-3.5 rounded-2xl cursor-pointer hover:border-brand-500/40 transition active:scale-[0.98]">
-            <div class="flex items-center justify-between mb-2">
-              <div class="w-8 h-8 rounded-xl bg-indigo-500/10 text-indigo-500 flex items-center justify-center">
-                <i class="fa-solid fa-map-pin text-sm"></i>
-              </div>
-              <span class="text-xs font-mono font-bold text-slate-400">${completedItin}/${tripData.itinerary.length}</span>
-            </div>
-            <h3 class="text-xs font-bold text-slate-900 dark:text-white">Itinerary Timeline</h3>
-            <p class="text-[10px] text-slate-500 dark:text-slate-400">View Orlando & NYC plan</p>
-          </div>
-
-          <div onclick="switchTab('budget')" class="glass-card p-3.5 rounded-2xl cursor-pointer hover:border-brand-500/40 transition active:scale-[0.98]">
-            <div class="flex items-center justify-between mb-2">
-              <div class="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
-                <i class="fa-solid fa-chart-line text-sm"></i>
-              </div>
-              <span class="text-xs font-mono font-bold text-slate-400">${percentSpent}%</span>
-            </div>
-            <h3 class="text-xs font-bold text-slate-900 dark:text-white">Budget Tracker</h3>
-            <p class="text-[10px] text-slate-500 dark:text-slate-400">SGD S$${tripData.totalBudget} Limit</p>
-          </div>
-        </div>
-
-        <!-- UPCOMING FLIGHT BANNER -->
-        ${tripData.flights.length > 0 ? `
-          <div class="glass-card rounded-2xl p-4 space-y-3">
-            <div class="flex justify-between items-center border-b border-slate-200 dark:border-slate-800 pb-2">
-              <span class="text-xs font-bold text-slate-900 dark:text-white flex items-center">
-                <i class="fa-solid fa-plane text-brand-500 mr-2"></i> Next Flight Segment
-              </span>
-              <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-brand-500/20 text-brand-600 dark:text-brand-300 font-semibold">${tripData.flights[0].type}</span>
-            </div>
-            <div class="flex justify-between items-center">
-              <div>
-                <span class="text-lg font-bold font-mono text-slate-800 dark:text-slate-100">${tripData.flights[0].route.split('->')[0] || ''}</span>
-                <p class="text-[11px] text-slate-500">${tripData.flights[0].dept}</p>
-              </div>
-              <div class="flex flex-col items-center">
-                <i class="fa-solid fa-arrow-right text-slate-400 text-xs"></i>
-                <span class="text-[10px] text-slate-400 font-mono">${tripData.flights[0].flightNum}</span>
-              </div>
-              <div class="text-right">
-                <span class="text-lg font-bold font-mono text-slate-800 dark:text-slate-100">${tripData.flights[0].route.split('->')[1] || ''}</span>
-                <p class="text-[11px] text-slate-500">${tripData.flights[0].arr}</p>
-              </div>
-            </div>
-          </div>
-        ` : ''}
-
-        <!-- PENDING TO-DOS PREVIEW -->
-        <div class="glass-card rounded-2xl p-4 space-y-3">
-          <div class="flex justify-between items-center">
-            <h3 class="text-xs font-bold text-slate-900 dark:text-white flex items-center">
-              <i class="fa-solid fa-list-check text-amber-500 mr-2"></i> Priority Tasks
-            </h3>
-            <button onclick="switchTab('todo')" class="text-[11px] text-brand-600 dark:text-brand-400 hover:underline">View All</button>
-          </div>
-          <div class="space-y-2">
-            ${tripData.todos.slice(0, 3).map(todo => `
-              <div onclick="toggleTodo('${todo.id}')" class="flex items-center justify-between p-2 rounded-xl bg-slate-100/70 dark:bg-slate-800/60 cursor-pointer active:scale-[0.99] transition">
-                <div class="flex items-center space-x-2.5">
-                  <i class="${todo.done ? 'fa-solid fa-circle-check text-emerald-500' : 'fa-regular fa-circle text-slate-400'} text-sm"></i>
-                  <span class="text-xs ${todo.done ? 'line-through text-slate-400' : 'text-slate-700 dark:text-slate-200'} font-medium">${todo.title}</span>
+            <div class="flex items-center gap-3 mb-4">
+                <div class="w-10 h-10 rounded-xl bg-brand-500/20 text-brand-400 flex items-center justify-center text-xl font-bold border border-brand-500/30 shrink-0">
+                    <i class="fa-solid fa-vault"></i>
                 </div>
-                <span class="text-[9px] px-2 py-0.5 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400">${todo.category}</span>
-              </div>
-            `).join('')}
-          </div>
-        </div>
-      `;
-    }
-
-    function renderLogisticsView() {
-      return `
-        <!-- FLIGHTS SECTION -->
-        <div class="space-y-3">
-          <div class="flex justify-between items-center">
-            <h2 class="text-sm font-bold text-slate-900 dark:text-white flex items-center">
-              <i class="fa-solid fa-plane-up text-brand-500 mr-2"></i> Air Travel & Flights
-            </h2>
-            <button onclick="openFlightModal()" class="px-3 py-1 bg-brand-600 hover:bg-brand-500 text-white text-xs font-medium rounded-xl active:scale-95 transition flex items-center space-x-1">
-              <i class="fa-solid fa-plus text-[10px]"></i>
-              <span>Add Flight</span>
-            </button>
-          </div>
-
-          <div class="space-y-2.5">
-            ${tripData.flights.length === 0 ? `
-              <p class="text-xs text-slate-400 italic text-center py-4">No flights added yet.</p>
-            ` : tripData.flights.map(f => `
-              <div class="glass-card rounded-2xl p-3.5 relative border border-slate-200 dark:border-slate-800 space-y-2">
-                <div class="flex justify-between items-center">
-                  <span class="text-[10px] font-bold font-mono px-2 py-0.5 rounded bg-brand-500/15 text-brand-600 dark:text-brand-300 uppercase">${f.type}</span>
-                  <div class="flex items-center space-x-2">
-                    <button onclick="openFlightModal('${f.id}')" class="px-2 py-1 bg-slate-200 dark:bg-slate-800 hover:bg-brand-500 hover:text-white text-slate-700 dark:text-slate-300 rounded-lg text-xs transition flex items-center space-x-1" title="Edit Flight">
-                      <i class="fa-solid fa-pen-to-square text-xs"></i>
-                      <span>Edit</span>
-                    </button>
-                    <button onclick="deleteFlight('${f.id}')" class="p-1 text-slate-400 hover:text-rose-500" title="Delete Flight">
-                      <i class="fa-solid fa-trash text-xs"></i>
-                    </button>
-                  </div>
+                <div>
+                    <h3 class="text-base sm:text-lg font-bold text-white">Join or Create Vault</h3>
+                    <p class="text-xs text-slate-400">Synchronize trips across devices with a Vault Key</p>
                 </div>
-                <div class="flex justify-between items-center">
-                  <div>
-                    <h3 class="text-sm font-bold text-slate-900 dark:text-white">${f.airline} (${f.flightNum})</h3>
-                    <p class="text-xs text-brand-600 dark:text-brand-400 font-mono font-semibold">${f.route}</p>
-                  </div>
-                  <div class="text-right">
-                    <span class="text-[10px] text-slate-400 block font-mono">PNR: ${f.pnr}</span>
-                    <span class="text-xs text-slate-500 dark:text-slate-400">${f.gate}</span>
-                  </div>
-                </div>
-                <div class="grid grid-cols-2 gap-2 text-[11px] bg-slate-100 dark:bg-slate-800/60 p-2 rounded-xl text-slate-600 dark:text-slate-400">
-                  <div><span class="font-semibold text-slate-500">Dept:</span> ${f.dept}</div>
-                  <div><span class="font-semibold text-slate-500">Arr:</span> ${f.arr}</div>
-                </div>
-              </div>
-            `).join('')}
-          </div>
-        </div>
-
-        <!-- HOTELS SECTION -->
-        <div class="space-y-3 pt-3 border-t border-slate-200 dark:border-slate-800">
-          <div class="flex justify-between items-center">
-            <h2 class="text-sm font-bold text-slate-900 dark:text-white flex items-center">
-              <i class="fa-solid fa-hotel text-brand-500 mr-2"></i> Accommodations
-            </h2>
-            <button onclick="openHotelModal()" class="px-3 py-1 bg-brand-600 hover:bg-brand-500 text-white text-xs font-medium rounded-xl active:scale-95 transition flex items-center space-x-1">
-              <i class="fa-solid fa-plus text-[10px]"></i>
-              <span>Add Lodging</span>
-            </button>
-          </div>
-
-          <div class="space-y-2.5">
-            ${tripData.hotels.length === 0 ? `
-              <p class="text-xs text-slate-400 italic text-center py-4">No lodging added yet.</p>
-            ` : tripData.hotels.map(h => `
-              <div class="glass-card rounded-2xl p-3.5 relative border border-slate-200 dark:border-slate-800 space-y-2">
-                <div class="flex justify-between items-start">
-                  <div>
-                    <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-indigo-500/15 text-indigo-600 dark:text-indigo-300 uppercase">${h.area}</span>
-                    <h3 class="text-sm font-bold text-slate-900 dark:text-white mt-1">${h.name}</h3>
-                  </div>
-                  <div class="flex items-center space-x-2">
-                    <button onclick="openHotelModal('${h.id}')" class="px-2 py-1 bg-slate-200 dark:bg-slate-800 hover:bg-brand-500 hover:text-white text-slate-700 dark:text-slate-300 rounded-lg text-xs transition flex items-center space-x-1" title="Edit Lodging">
-                      <i class="fa-solid fa-pen-to-square text-xs"></i>
-                      <span>Edit</span>
-                    </button>
-                    <button onclick="deleteHotel('${h.id}')" class="p-1 text-slate-400 hover:text-rose-500" title="Delete Lodging">
-                      <i class="fa-solid fa-trash text-xs"></i>
-                    </button>
-                  </div>
-                </div>
-                <p class="text-xs text-slate-500 dark:text-slate-400 flex items-center">
-                  <i class="fa-solid fa-location-dot text-slate-400 mr-1.5 text-xs"></i> ${h.address}
-                </p>
-                <div class="grid grid-cols-2 gap-2 text-[11px] bg-slate-100 dark:bg-slate-800/60 p-2 rounded-xl text-slate-600 dark:text-slate-400 font-mono">
-                  <div><span class="font-semibold text-slate-500">In:</span> ${h.checkIn}</div>
-                  <div><span class="font-semibold text-slate-500">Out:</span> ${h.checkOut}</div>
-                </div>
-              </div>
-            `).join('')}
-          </div>
-        </div>
-      `;
-    }
-
-    function renderItineraryView() {
-      return `
-        <div class="space-y-3">
-          <div class="flex justify-between items-center">
-            <div>
-              <h2 class="text-sm font-bold text-slate-900 dark:text-white">Day-by-Day Itinerary</h2>
-              <p class="text-[10px] text-slate-500">${tripData.destination} Schedule</p>
             </div>
-            <button onclick="openItineraryModal()" class="px-3 py-1 bg-brand-600 hover:bg-brand-500 text-white text-xs font-medium rounded-xl active:scale-95 transition flex items-center space-x-1">
-              <i class="fa-solid fa-plus text-[10px]"></i>
-              <span>Add Event</span>
-            </button>
-          </div>
 
-          <div class="space-y-3 relative pl-3 border-l-2 border-brand-500/30 ml-2">
-            ${tripData.itinerary.length === 0 ? `
-              <p class="text-xs text-slate-400 italic py-4">No activities scheduled yet.</p>
-            ` : tripData.itinerary.map(item => `
-              <div class="relative pl-4 space-y-1">
-                <div class="absolute -left-[19px] top-1 w-3 h-3 rounded-full ${item.done ? 'bg-emerald-500 ring-4 ring-emerald-500/20' : 'bg-slate-400 dark:bg-slate-600'}"></div>
-                <div onclick="toggleItinerary('${item.id}')" class="glass-card p-3 rounded-xl border border-slate-200 dark:border-slate-800 cursor-pointer active:scale-[0.99] transition space-y-1">
-                  <div class="flex justify-between items-center">
-                    <span class="text-[10px] font-bold text-brand-600 dark:text-brand-300 font-mono">${item.day} • ${item.time}</span>
-                    <div class="flex items-center space-x-2">
-                      <button onclick="event.stopPropagation(); openItineraryModal('${item.id}')" class="text-slate-400 hover:text-brand-500 text-xs px-1" title="Edit Event">
-                        <i class="fa-solid fa-pen-to-square"></i>
-                      </button>
-                      <button onclick="event.stopPropagation(); deleteItinerary('${item.id}')" class="text-slate-400 hover:text-rose-500 text-xs px-1" title="Delete Event">
-                        <i class="fa-solid fa-xmark"></i>
-                      </button>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Vault Key</label>
+                    <div class="flex gap-2">
+                        <input type="text" id="vaultKeyInput" placeholder="e.g. ZEN-8492" class="flex-1 uppercase font-mono tracking-wider text-center font-bold px-3.5 py-2.5 rounded-xl border border-slate-700 bg-slate-950 text-slate-100 text-sm focus:border-brand-500">
+                        <button title="Generate Random Vault Key" class="px-3 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold flex items-center gap-1 transition shrink-0">
+                            <i class="fa-solid fa-shuffle"></i> Random
+                        </button>
                     </div>
-                  </div>
-                  <h3 class="text-xs font-bold ${item.done ? 'line-through text-slate-400' : 'text-slate-900 dark:text-white'}">${item.title}</h3>
-                  ${item.notes ? `<p class="text-[11px] text-slate-500 dark:text-slate-400">${item.notes}</p>` : ''}
                 </div>
-              </div>
-            `).join('')}
-          </div>
-        </div>
-      `;
-    }
 
-    function renderBudgetView() {
-      const totalSpentSGD = tripData.expenses.reduce((sum, e) => sum + Number(e.amount || 0), 0);
-      const remainingSGD = tripData.totalBudget - totalSpentSGD;
-      const usdRate = exchangeRatesToUSD['SGD'];
-      const totalSpentUSD = totalSpentSGD / usdRate;
-
-      return `
-        <div class="space-y-4">
-          <!-- BUDGET SUMMARY CARD -->
-          <div class="glass-card rounded-2xl p-4 border border-slate-200 dark:border-slate-800 space-y-3">
-            <div class="flex justify-between items-center">
-              <div>
-                <span class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Total Travel Budget</span>
-                <h2 class="text-xl font-bold text-slate-900 dark:text-white font-mono">S$${tripData.totalBudget.toFixed(2)}</h2>
-              </div>
-              <button onclick="openExpenseModal()" class="px-3 py-1.5 bg-brand-600 hover:bg-brand-500 text-white rounded-xl text-xs font-medium active:scale-95 transition flex items-center space-x-1">
-                <i class="fa-solid fa-plus text-[10px]"></i>
-                <span>Add Expense</span>
-              </button>
-            </div>
-
-            <!-- PROGRESS BAR -->
-            <div>
-              <div class="flex justify-between text-[11px] text-slate-500 dark:text-slate-400 mb-1 font-mono">
-                <span>Spent: S$${totalSpentSGD.toFixed(2)} ($${totalSpentUSD.toFixed(2)} USD)</span>
-                <span>Remaining: S$${remainingSGD.toFixed(2)}</span>
-              </div>
-              <div class="w-full h-2.5 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
-                <div class="h-full bg-brand-500 transition-all duration-500" style="width: ${Math.min((totalSpentSGD / tripData.totalBudget) * 100, 100)}%"></div>
-              </div>
-            </div>
-          </div>
-
-          <!-- EXPENSES LIST -->
-          <div class="space-y-2">
-            <h3 class="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">Tracked Expenses</h3>
-            <div class="space-y-2">
-              ${tripData.expenses.length === 0 ? `
-                <p class="text-xs text-slate-400 italic text-center py-4">No expenses recorded.</p>
-              ` : tripData.expenses.map(e => `
-                <div class="glass-card p-3 rounded-xl border border-slate-200 dark:border-slate-800 flex justify-between items-center">
-                  <div>
-                    <span class="text-[9px] px-2 py-0.5 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-medium">${e.category} • ${e.date || ''}</span>
-                    <h4 class="text-xs font-bold text-slate-900 dark:text-white mt-0.5">${e.title}</h4>
-                  </div>
-                  <div class="flex items-center space-x-3">
-                    <span class="text-xs font-bold font-mono text-brand-600 dark:text-brand-400">S$${Number(e.amount).toFixed(2)}</span>
-                    <button onclick="openExpenseModal('${e.id}')" class="text-slate-400 hover:text-brand-500 text-xs" title="Edit Expense">
-                      <i class="fa-solid fa-pen-to-square"></i>
-                    </button>
-                    <button onclick="deleteExpense('${e.id}')" class="text-slate-400 hover:text-rose-500 text-xs" title="Delete Expense">
-                      <i class="fa-solid fa-trash"></i>
-                    </button>
-                  </div>
+                <div class="p-3 bg-slate-950 rounded-xl border border-slate-800 text-xs text-slate-300 space-y-1">
+                    <p class="font-bold text-brand-400 flex items-center gap-1">
+                        <i class="fa-solid fa-circle-info"></i> How Vault Sync Works:
+                    </p>
+                    <p class="text-[11px] leading-relaxed text-slate-400">Anyone entering the exact same Vault Key will instantly view and collaborate on itineraries in real-time.</p>
                 </div>
-              `).join('')}
-            </div>
-          </div>
-        </div>
-      `;
-    }
 
-    function renderTodoView() {
-      return `
-        <div class="space-y-3">
-          <div class="flex justify-between items-center">
-            <div>
-              <h2 class="text-sm font-bold text-slate-900 dark:text-white">To-Do & Packing Checklist</h2>
-              <p class="text-[10px] text-slate-500">Preparations and Tasks</p>
+                <div class="flex gap-2 pt-1">
+                    <button class="w-full py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-semibold text-xs sm:text-sm transition shadow-lg shadow-brand-600/20 active:scale-95">
+                        Join / Connect Vault
+                    </button>
+                </div>
             </div>
-            <button onclick="openTodoModal()" class="px-3 py-1 bg-brand-600 hover:bg-brand-500 text-white text-xs font-medium rounded-xl active:scale-95 transition flex items-center space-x-1">
-              <i class="fa-solid fa-plus text-[10px]"></i>
-              <span>Add Task</span>
+        </div>
+    </div>
+
+    <!-- 2. TRIP MODAL (NEW / EDIT) -->
+    <div id="tripModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-3 sm:p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-5 sm:p-6 shadow-2xl relative">
+            <button class="absolute top-4 right-4 text-slate-400 hover:text-white text-lg p-1">
+                <i class="fa-solid fa-xmark"></i>
             </button>
-          </div>
+            <h3 id="tripModalTitle" class="text-base sm:text-lg font-bold text-white mb-4">New Trip</h3>
 
-          <div class="space-y-2">
-            ${tripData.todos.length === 0 ? `
-              <p class="text-xs text-slate-400 italic text-center py-4">No checklist items yet.</p>
-            ` : tripData.todos.map(todo => `
-              <div class="glass-card p-3 rounded-xl border border-slate-200 dark:border-slate-800 flex items-center justify-between">
-                <div onclick="toggleTodo('${todo.id}')" class="flex items-center space-x-3 flex-1 cursor-pointer">
-                  <i class="${todo.done ? 'fa-solid fa-circle-check text-emerald-500' : 'fa-regular fa-circle text-slate-400'} text-base"></i>
-                  <div>
-                    <h3 class="text-xs font-semibold ${todo.done ? 'line-through text-slate-400' : 'text-slate-800 dark:text-slate-200'}">${todo.title}</h3>
-                    <span class="text-[9px] text-slate-500 dark:text-slate-400">${todo.category}</span>
-                  </div>
+            <form class="space-y-3.5">
+                <input type="hidden" id="tripFormId">
+                <div>
+                    <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Trip Title</label>
+                    <input type="text" id="tripFormTitle" placeholder="e.g. USA Adventure: Orlando & NYC" required="" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-700 bg-slate-950 text-slate-100 text-xs sm:text-sm focus:border-brand-500">
                 </div>
-                <div class="flex items-center space-x-2">
-                  <button onclick="openTodoModal('${todo.id}')" class="text-slate-400 hover:text-brand-500 text-xs px-1" title="Edit Task">
-                    <i class="fa-solid fa-pen-to-square"></i>
-                  </button>
-                  <button onclick="deleteTodo('${todo.id}')" class="text-slate-400 hover:text-rose-500 text-xs px-1" title="Delete Task">
-                    <i class="fa-solid fa-trash"></i>
-                  </button>
+                <div>
+                    <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Destination(s)</label>
+                    <input type="text" id="tripFormDest" placeholder="e.g. Orlando & New York City, USA" required="" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-700 bg-slate-950 text-slate-100 text-xs sm:text-sm focus:border-brand-500">
                 </div>
-              </div>
-            `).join('')}
-          </div>
+                <div class="grid grid-cols-2 gap-2.5">
+                    <div>
+                        <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Start Date</label>
+                        <input type="date" id="tripFormStartDate" required="" class="w-full px-3 py-2.5 rounded-xl border border-slate-700 bg-slate-950 text-slate-100 text-xs focus:border-brand-500">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">End Date</label>
+                        <input type="date" id="tripFormEndDate" required="" class="w-full px-3 py-2.5 rounded-xl border border-slate-700 bg-slate-950 text-slate-100 text-xs focus:border-brand-500">
+                    </div>
+                </div>
+
+                <div class="flex justify-end gap-2 pt-3">
+                    <button type="button" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold">Cancel</button>
+                    <button type="submit" class="px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-xs font-semibold transition shadow-lg shadow-brand-600/20 active:scale-95">Save Trip</button>
+                </div>
+            </form>
         </div>
-      `;
-    }
+    </div>
 
-    // --- FLIGHT CRUD ---
-    function openFlightModal(id = null) {
-      const modal = document.getElementById('flight-modal');
-      const title = document.getElementById('flight-modal-title');
-      const form = document.getElementById('flight-form');
-      if (!modal) return;
+    <!-- 3. ACTIVITY MODAL -->
+    <div id="activityModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-3 sm:p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-5 sm:p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+            <button class="absolute top-4 right-4 text-slate-400 hover:text-white text-lg p-1">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            <h3 id="activityModalTitle" class="text-base sm:text-lg font-bold text-white mb-4">Add Activity</h3>
 
-      if (id) {
-        const flight = tripData.flights.find(f => f.id === id);
-        if (flight) {
-          title.innerText = "Edit Flight Segment";
-          document.getElementById('flight-id').value = flight.id;
-          document.getElementById('flight-type').value = flight.type;
-          document.getElementById('flight-airline').value = flight.airline;
-          document.getElementById('flight-num').value = flight.flightNum;
-          document.getElementById('flight-route').value = flight.route;
-          document.getElementById('flight-dept').value = flight.dept;
-          document.getElementById('flight-arr').value = flight.arr;
-          document.getElementById('flight-pnr').value = flight.pnr;
-          document.getElementById('flight-gate').value = flight.gate;
-        }
-      } else {
-        title.innerText = "Add Flight Segment";
-        form.reset();
-        document.getElementById('flight-id').value = "";
-      }
-      modal.classList.remove('hidden');
-    }
+            <form class="space-y-3">
+                <input type="hidden" id="actFormId">
+                <div>
+                    <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Activity Title</label>
+                    <input type="text" id="actFormTitle" placeholder="e.g. Universal Studios Theme Park" required="" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-700 bg-slate-950 text-slate-100 text-xs sm:text-sm focus:border-brand-500">
+                </div>
+                
+                <div class="grid grid-cols-2 gap-2.5">
+                    <div>
+                        <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Date</label>
+                        <input type="date" id="actFormDate" required="" class="w-full px-3 py-2 rounded-xl border border-slate-700 bg-slate-950 text-slate-100 text-xs focus:border-brand-500">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Time</label>
+                        <input type="time" id="actFormTime" required="" class="w-full px-3 py-2 rounded-xl border border-slate-700 bg-slate-950 text-slate-100 text-xs focus:border-brand-500">
+                    </div>
+                </div>
 
-    function closeFlightModal() {
-      const modal = document.getElementById('flight-modal');
-      if (modal) modal.classList.add('hidden');
-    }
+                <div class="grid grid-cols-2 gap-2.5">
+                    <div>
+                        <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Category</label>
+                        <select id="actFormCategory" class="w-full px-3 py-2 rounded-xl border border-slate-700 bg-slate-950 text-slate-100 text-xs focus:border-brand-500">
+                            <option value="sightseeing">Sightseeing</option>
+                            <option value="food">Food & Dining</option>
+                            <option value="theme_park">Theme Park / Event</option>
+                            <option value="transport">Transit / Flight</option>
+                            <option value="hotel">Hotel Check-in/out</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Est. Cost (SGD S$)</label>
+                        <input type="number" id="actFormCost" min="0" step="any" placeholder="0" class="w-full px-3 py-2 rounded-xl border border-slate-700 bg-slate-950 text-slate-100 text-xs focus:border-brand-500">
+                    </div>
+                </div>
 
-    function saveFlight(e) {
-      e.preventDefault();
-      const id = document.getElementById('flight-id').value;
-      const type = document.getElementById('flight-type').value;
-      const airline = document.getElementById('flight-airline').value.trim();
-      const flightNum = document.getElementById('flight-num').value.trim();
-      const route = document.getElementById('flight-route').value.trim();
-      const dept = document.getElementById('flight-dept').value.trim();
-      const arr = document.getElementById('flight-arr').value.trim();
-      const pnr = document.getElementById('flight-pnr').value.trim();
-      const gate = document.getElementById('flight-gate').value.trim();
+                <div>
+                    <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Location / Address</label>
+                    <input type="text" id="actFormLocation" placeholder="e.g. 6000 Universal Blvd, Orlando, FL" class="w-full px-3.5 py-2 rounded-xl border border-slate-700 bg-slate-950 text-slate-100 text-xs focus:border-brand-500">
+                </div>
 
-      if (id) {
-        const idx = tripData.flights.findIndex(f => f.id === id);
-        if (idx !== -1) {
-          tripData.flights[idx] = { id, type, airline, flightNum, route, dept, arr, pnr, gate };
-          showToast("Flight updated!");
-        }
-      } else {
-        const newFlight = {
-          id: 'f-' + Date.now(),
-          type, airline, flightNum, route, dept, arr, pnr, gate
-        };
-        tripData.flights.push(newFlight);
-        showToast("Flight added!");
-      }
+                <div>
+                    <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Notes / Reminders</label>
+                    <textarea id="actFormNotes" placeholder="e.g. Early park admission starts at 8:00 AM..." class="w-full px-3.5 py-2 rounded-xl border border-slate-700 bg-slate-950 text-slate-100 text-xs focus:border-brand-500 h-16 resize-none"></textarea>
+                </div>
 
-      saveTripToVault();
-      renderActiveTab();
-      closeFlightModal();
-    }
+                <div class="flex justify-end gap-2 pt-2">
+                    <button type="button" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold">Cancel</button>
+                    <button type="submit" class="px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-xs font-semibold transition shadow-lg shadow-brand-600/20 active:scale-95">Save Activity</button>
+                </div>
+            </form>
+        </div>
+    </div>
 
-    function deleteFlight(id) {
-      tripData.flights = tripData.flights.filter(f => f.id !== id);
-      saveTripToVault();
-      renderActiveTab();
-      showToast("Flight removed");
-    }
+    <!-- 4. FLIGHT MODAL -->
+    <div id="flightModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-3 sm:p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-5 sm:p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+            <button class="absolute top-4 right-4 text-slate-400 hover:text-white text-lg p-1">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            <h3 id="flightModalTitle" class="text-base sm:text-lg font-bold text-white mb-4">Add Flight Reservation</h3>
 
-    // --- HOTEL CRUD ---
-    function openHotelModal(id = null) {
-      const modal = document.getElementById('hotel-modal');
-      const title = document.getElementById('hotel-modal-title');
-      const form = document.getElementById('hotel-form');
-      if (!modal) return;
+            <form class="space-y-3">
+                <input type="hidden" id="flightFormId">
+                <div class="grid grid-cols-2 gap-2.5">
+                    <div>
+                        <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Airline</label>
+                        <input type="text" id="flightFormAirline" placeholder="e.g. Singapore Airlines" required="" class="w-full px-3.5 py-2 rounded-xl border border-slate-700 bg-slate-950 text-slate-100 text-xs focus:border-brand-500">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Flight Number</label>
+                        <input type="text" id="flightFormNumber" placeholder="e.g. SQ 24" required="" class="w-full px-3.5 py-2 rounded-xl border border-slate-700 bg-slate-950 text-slate-100 text-xs focus:border-brand-500">
+                    </div>
+                </div>
 
-      if (id) {
-        const hotel = tripData.hotels.find(h => h.id === id);
-        if (hotel) {
-          title.innerText = "Edit Accommodation";
-          document.getElementById('hotel-id').value = hotel.id;
-          document.getElementById('hotel-name').value = hotel.name;
-          document.getElementById('hotel-area').value = hotel.area;
-          document.getElementById('hotel-pnr').value = hotel.pnr;
-          document.getElementById('hotel-in').value = hotel.checkIn;
-          document.getElementById('hotel-out').value = hotel.checkOut;
-          document.getElementById('hotel-address').value = hotel.address;
-        }
-      } else {
-        title.innerText = "Add Accommodation";
-        form.reset();
-        document.getElementById('hotel-id').value = "";
-      }
-      modal.classList.remove('hidden');
-    }
+                <div class="grid grid-cols-2 gap-2.5">
+                    <div>
+                        <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Origin Code</label>
+                        <input type="text" id="flightFormFrom" placeholder="e.g. SIN" maxlength="5" required="" class="w-full px-3 py-2 rounded-xl border border-slate-700 bg-slate-950 text-slate-100 text-xs uppercase focus:border-brand-500">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Destination Code</label>
+                        <input type="text" id="flightFormTo" placeholder="e.g. JFK" maxlength="5" required="" class="w-full px-3 py-2 rounded-xl border border-slate-700 bg-slate-950 text-slate-100 text-xs uppercase focus:border-brand-500">
+                    </div>
+                </div>
 
-    function closeHotelModal() {
-      const modal = document.getElementById('hotel-modal');
-      if (modal) modal.classList.add('hidden');
-    }
+                <div class="grid grid-cols-2 gap-2.5">
+                    <div>
+                        <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Departure Time</label>
+                        <input type="datetime-local" id="flightFormDepTime" required="" class="w-full px-2.5 py-2 rounded-xl border border-slate-700 bg-slate-950 text-slate-100 text-xs focus:border-brand-500">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Arrival Time</label>
+                        <input type="datetime-local" id="flightFormArrTime" required="" class="w-full px-2.5 py-2 rounded-xl border border-slate-700 bg-slate-950 text-slate-100 text-xs focus:border-brand-500">
+                    </div>
+                </div>
 
-    function saveHotel(e) {
-      e.preventDefault();
-      const id = document.getElementById('hotel-id').value;
-      const name = document.getElementById('hotel-name').value.trim();
-      const area = document.getElementById('hotel-area').value.trim();
-      const pnr = document.getElementById('hotel-pnr').value.trim();
-      const checkIn = document.getElementById('hotel-in').value.trim();
-      const checkOut = document.getElementById('hotel-out').value.trim();
-      const address = document.getElementById('hotel-address').value.trim();
+                <div class="grid grid-cols-2 gap-2.5">
+                    <div>
+                        <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">PNR / Booking Ref</label>
+                        <input type="text" id="flightFormPnr" placeholder="e.g. SQ8842" class="w-full px-3.5 py-2 rounded-xl border border-slate-700 bg-slate-950 text-slate-100 text-xs uppercase focus:border-brand-500">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Seat / Terminal</label>
+                        <input type="text" id="flightFormSeat" placeholder="e.g. 32A / Gate B4" class="w-full px-3.5 py-2 rounded-xl border border-slate-700 bg-slate-950 text-slate-100 text-xs focus:border-brand-500">
+                    </div>
+                </div>
 
-      if (id) {
-        const idx = tripData.hotels.findIndex(h => h.id === id);
-        if (idx !== -1) {
-          tripData.hotels[idx] = { id, name, area, pnr, checkIn, checkOut, address };
-          showToast("Lodging updated!");
-        }
-      } else {
-        const newHotel = {
-          id: 'h-' + Date.now(),
-          name, area, pnr, checkIn, checkOut, address
-        };
-        tripData.hotels.push(newHotel);
-        showToast("Lodging added!");
-      }
+                <div class="flex justify-end gap-2 pt-2">
+                    <button type="button" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold">Cancel</button>
+                    <button type="submit" class="px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-xs font-semibold transition shadow-lg shadow-brand-600/20 active:scale-95">Save Flight</button>
+                </div>
+            </form>
+        </div>
+    </div>
 
-      saveTripToVault();
-      renderActiveTab();
-      closeHotelModal();
-    }
+    <!-- 5. LODGING MODAL -->
+    <div id="lodgingModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-3 sm:p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-5 sm:p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+            <button class="absolute top-4 right-4 text-slate-400 hover:text-white text-lg p-1">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            <h3 id="lodgingModalTitle" class="text-base sm:text-lg font-bold text-white mb-4">Add Lodging Booking</h3>
 
-    function deleteHotel(id) {
-      tripData.hotels = tripData.hotels.filter(h => h.id !== id);
-      saveTripToVault();
-      renderActiveTab();
-      showToast("Lodging removed");
-    }
+            <form class="space-y-3">
+                <input type="hidden" id="lodgingFormId">
+                <div>
+                    <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Hotel / Resort Name</label>
+                    <input type="text" id="lodgingFormName" placeholder="e.g. Universal Cabana Bay Resort" required="" class="w-full px-3.5 py-2 rounded-xl border border-slate-700 bg-slate-950 text-slate-100 text-xs focus:border-brand-500">
+                </div>
 
-    // --- ITINERARY CRUD ---
-    function openItineraryModal(id = null) {
-      const modal = document.getElementById('itinerary-modal');
-      const title = document.getElementById('itinerary-modal-title');
-      if (!modal) return;
+                <div>
+                    <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Address</label>
+                    <input type="text" id="lodgingFormAddress" placeholder="e.g. 6525 Adventure Way, Orlando, FL" required="" class="w-full px-3.5 py-2 rounded-xl border border-slate-700 bg-slate-950 text-slate-100 text-xs focus:border-brand-500">
+                </div>
 
-      if (id) {
-        const item = tripData.itinerary.find(i => i.id === id);
-        if (item) {
-          title.innerText = "Edit Itinerary Event";
-          document.getElementById('itin-id').value = item.id;
-          document.getElementById('itin-day').value = item.day;
-          document.getElementById('itin-time').value = item.time;
-          document.getElementById('itin-title').value = item.title;
-          document.getElementById('itin-notes').value = item.notes || "";
-        }
-      } else {
-        title.innerText = "Add Itinerary Event";
-        document.getElementById('itin-id').value = "";
-        document.getElementById('itin-day').value = "";
-        document.getElementById('itin-time').value = "";
-        document.getElementById('itin-title').value = "";
-        document.getElementById('itin-notes').value = "";
-      }
-      modal.classList.remove('hidden');
-    }
+                <div class="grid grid-cols-2 gap-2.5">
+                    <div>
+                        <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Check-in Date</label>
+                        <input type="date" id="lodgingFormCheckIn" required="" class="w-full px-3 py-2 rounded-xl border border-slate-700 bg-slate-950 text-slate-100 text-xs focus:border-brand-500">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Check-out Date</label>
+                        <input type="date" id="lodgingFormCheckOut" required="" class="w-full px-3 py-2 rounded-xl border border-slate-700 bg-slate-950 text-slate-100 text-xs focus:border-brand-500">
+                    </div>
+                </div>
 
-    function closeItineraryModal() {
-      const modal = document.getElementById('itinerary-modal');
-      if (modal) modal.classList.add('hidden');
-    }
+                <div>
+                    <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Confirmation Number</label>
+                    <input type="text" id="lodgingFormConf" placeholder="e.g. RES-998124" class="w-full px-3.5 py-2 rounded-xl border border-slate-700 bg-slate-950 text-slate-100 text-xs uppercase focus:border-brand-500">
+                </div>
 
-    function saveItineraryItem(e) {
-      e.preventDefault();
-      const id = document.getElementById('itin-id').value;
-      const day = document.getElementById('itin-day').value.trim();
-      const time = document.getElementById('itin-time').value.trim();
-      const title = document.getElementById('itin-title').value.trim();
-      const notes = document.getElementById('itin-notes').value.trim();
+                <div>
+                    <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Notes / Room Type</label>
+                    <textarea id="lodgingFormNotes" placeholder="e.g. Poolside Suite, Express Pass included..." class="w-full px-3.5 py-2 rounded-xl border border-slate-700 bg-slate-950 text-slate-100 text-xs focus:border-brand-500 h-16 resize-none"></textarea>
+                </div>
 
-      if (id) {
-        const idx = tripData.itinerary.findIndex(i => i.id === id);
-        if (idx !== -1) {
-          tripData.itinerary[idx] = { ...tripData.itinerary[idx], day, time, title, notes };
-          showToast("Event updated!");
-        }
-      } else {
-        const newItem = {
-          id: 'i-' + Date.now(),
-          day, time, title, notes, done: false
-        };
-        tripData.itinerary.push(newItem);
-        showToast("Event added!");
-      }
+                <div class="flex justify-end gap-2 pt-2">
+                    <button type="button" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold">Cancel</button>
+                    <button type="submit" class="px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-xs font-semibold transition shadow-lg shadow-brand-600/20 active:scale-95">Save Lodging</button>
+                </div>
+            </form>
+        </div>
+    </div>
 
-      saveTripToVault();
-      renderActiveTab();
-      closeItineraryModal();
-    }
+    <!-- 6. DIAGNOSTICS & CONSOLE DRAWER -->
+    <div id="logConsoleModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-3 sm:p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-xl w-full p-5 shadow-2xl relative flex flex-col max-h-[85vh]">
+            <button class="absolute top-4 right-4 text-slate-400 hover:text-white text-lg p-1">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            
+            <div class="flex items-center justify-between mb-3 pr-6">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-terminal text-brand-400"></i>
+                    <h3 class="text-base sm:text-lg font-bold text-white">Diagnostics Console</h3>
+                </div>
+                <button class="px-3 py-1.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-xs font-semibold flex items-center gap-1.5 transition">
+                    <i class="fa-solid fa-gauge-high"></i> Ping
+                </button>
+            </div>
 
-    function toggleItinerary(id) {
-      const item = tripData.itinerary.find(i => i.id === id);
-      if (item) {
-        item.done = !item.done;
-        saveTripToVault();
-        renderActiveTab();
-      }
-    }
+            <!-- Ping Result Banner -->
+            <div id="pingResultBanner" class="hidden mb-2.5 p-2.5 rounded-xl bg-slate-950 border border-brand-500/30 text-xs text-brand-300 flex items-center justify-between">
+                <span><i class="fa-solid fa-bolt text-amber-400 mr-1"></i> Firestore Latency:</span>
+                <span id="pingValueText" class="font-mono font-bold text-white">0 ms</span>
+            </div>
 
-    function deleteItinerary(id) {
-      tripData.itinerary = tripData.itinerary.filter(i => i.id !== id);
-      saveTripToVault();
-      renderActiveTab();
-      showToast("Event removed");
-    }
+            <!-- Console Log Window -->
+            <div id="logWindow" class="flex-1 bg-slate-950 rounded-xl p-3 border border-slate-800 font-mono text-[11px] overflow-y-auto space-y-1 text-slate-300 min-h-[200px]">
+                <!-- Log entries injected here -->
+            </div>
 
-    // --- EXPENSE CRUD ---
-    function openExpenseModal(id = null) {
-      const modal = document.getElementById('expense-modal');
-      const title = document.getElementById('expense-modal-title');
-      if (!modal) return;
+            <div class="flex justify-between items-center mt-3 text-xs text-slate-400">
+                <span>Vault ID: <strong id="logConsoleVault" class="text-slate-200">ZEN-8492</strong></span>
+                <button class="text-slate-400 hover:text-white underline text-[11px]">Clear Logs</button>
+            </div>
+        </div>
+    </div>
 
-      if (id) {
-        const exp = tripData.expenses.find(e => e.id === id);
-        if (exp) {
-          title.innerText = "Edit Expense Item";
-          document.getElementById('exp-id').value = exp.id;
-          document.getElementById('exp-category').value = exp.category;
-          document.getElementById('exp-title').value = exp.title;
-          document.getElementById('exp-amount').value = exp.amount;
-          document.getElementById('exp-date').value = exp.date || "";
-        }
-      } else {
-        title.innerText = "Add Expense Item";
-        document.getElementById('exp-id').value = "";
-        document.getElementById('exp-title').value = "";
-        document.getElementById('exp-amount').value = "";
-        document.getElementById('exp-date').value = "";
-      }
-      modal.classList.remove('hidden');
-    }
-
-    function closeExpenseModal() {
-      const modal = document.getElementById('expense-modal');
-      if (modal) modal.classList.add('hidden');
-    }
-
-    function saveExpenseItem(e) {
-      e.preventDefault();
-      const id = document.getElementById('exp-id').value;
-      const category = document.getElementById('exp-category').value;
-      const title = document.getElementById('exp-title').value.trim();
-      const amount = parseFloat(document.getElementById('exp-amount').value) || 0;
-      const date = document.getElementById('exp-date').value.trim();
-
-      if (id) {
-        const idx = tripData.expenses.findIndex(e => e.id === id);
-        if (idx !== -1) {
-          tripData.expenses[idx] = { id, category, title, amount, date };
-          showToast("Expense updated!");
-        }
-      } else {
-        const newExp = {
-          id: 'e-' + Date.now(),
-          category, title, amount, date
-        };
-        tripData.expenses.push(newExp);
-        showToast("Expense added!");
-      }
-
-      saveTripToVault();
-      renderActiveTab();
-      closeExpenseModal();
-    }
-
-    function deleteExpense(id) {
-      tripData.expenses = tripData.expenses.filter(e => e.id !== id);
-      saveTripToVault();
-      renderActiveTab();
-      showToast("Expense removed");
-    }
-
-    // --- TO-DO CRUD ---
-    function openTodoModal(id = null) {
-      const modal = document.getElementById('todo-modal');
-      const title = document.getElementById('todo-modal-title');
-      if (!modal) return;
-
-      if (id) {
-        const todo = tripData.todos.find(t => t.id === id);
-        if (todo) {
-          title.innerText = "Edit Task / Packing Item";
-          document.getElementById('todo-id').value = todo.id;
-          document.getElementById('todo-cat').value = todo.category;
-          document.getElementById('todo-title').value = todo.title;
-        }
-      } else {
-        title.innerText = "Add Task / Packing Item";
-        document.getElementById('todo-id').value = "";
-        document.getElementById('todo-title').value = "";
-      }
-      modal.classList.remove('hidden');
-    }
-
-    function closeTodoModal() {
-      const modal = document.getElementById('todo-modal');
-      if (modal) modal.classList.add('hidden');
-    }
-
-    function saveTodoItem(e) {
-      e.preventDefault();
-      const id = document.getElementById('todo-id').value;
-      const category = document.getElementById('todo-cat').value;
-      const title = document.getElementById('todo-title').value.trim();
-
-      if (id) {
-        const idx = tripData.todos.findIndex(t => t.id === id);
-        if (idx !== -1) {
-          tripData.todos[idx] = { ...tripData.todos[idx], category, title };
-          showToast("Task updated!");
-        }
-      } else {
-        const newTodo = {
-          id: 't-' + Date.now(),
-          category, title, done: false
-        };
-        tripData.todos.push(newTodo);
-        showToast("Task added!");
-      }
-
-      saveTripToVault();
-      renderActiveTab();
-      closeTodoModal();
-    }
-
-    function toggleTodo(id) {
-      const todo = tripData.todos.find(t => t.id === id);
-      if (todo) {
-        todo.done = !todo.done;
-        saveTripToVault();
-        renderActiveTab();
-      }
-    }
-
-    function deleteTodo(id) {
-      tripData.todos = tripData.todos.filter(t => t.id !== id);
-      saveTripToVault();
-      renderActiveTab();
-      showToast("Task removed");
-    }
-
-    // --- TRIP OVERVIEW EDIT ---
-    function openTripEditModal() {
-      document.getElementById('trip-dest-input').value = tripData.destination;
-      document.getElementById('trip-dates-input').value = tripData.dates;
-      document.getElementById('trip-budget-input').value = tripData.totalBudget;
-      document.getElementById('trip-edit-modal').classList.remove('hidden');
-    }
-
-    function closeTripEditModal() {
-      document.getElementById('trip-edit-modal').classList.add('hidden');
-    }
-
-    function saveTripOverview(e) {
-      e.preventDefault();
-      tripData.destination = document.getElementById('trip-dest-input').value.trim();
-      tripData.dates = document.getElementById('trip-dates-input').value.trim();
-      tripData.totalBudget = parseFloat(document.getElementById('trip-budget-input').value) || 0;
-      saveTripToVault();
-      renderActiveTab();
-      closeTripEditModal();
-      showToast("Trip overview updated!");
-    }
-
-    // --- OTHER MODAL CONTROLS & CURRENCY CONVERTER ---
-    function openVaultModal() {
-      document.getElementById('vault-modal').classList.remove('hidden');
-    }
-
-    function closeVaultModal() {
-      document.getElementById('vault-modal').classList.add('hidden');
-    }
-
-    function openDiagnosticsModal() {
-      document.getElementById('diagnostics-modal').classList.remove('hidden');
-    }
-
-    function closeDiagnosticsModal() {
-      document.getElementById('diagnostics-modal').classList.add('hidden');
-    }
-
-    function openToolsModal() {
-      document.getElementById('tools-modal').classList.remove('hidden');
-      calculateCurrency();
-    }
-
-    function closeToolsModal() {
-      document.getElementById('tools-modal').classList.add('hidden');
-    }
-
-    function calculateCurrency() {
-      const amount = parseFloat(document.getElementById('calc-amount').value) || 0;
-      const fromCurr = document.getElementById('calc-from').value;
-      const toCurr = document.getElementById('calc-to').value;
-
-      const fromRateUSD = exchangeRatesToUSD[fromCurr] || 1;
-      const toRateUSD = exchangeRatesToUSD[toCurr] || 1;
-
-      // Convert from source to USD, then to target currency
-      const inUSD = amount / fromRateUSD;
-      const converted = inUSD * toRateUSD;
-
-      const singleRate = (1 / fromRateUSD) * toRateUSD;
-
-      document.getElementById('calc-result').innerText = `${converted.toFixed(2)} ${toCurr}`;
-      document.getElementById('calc-rate-label').innerText = `1 ${fromCurr} ≈ ${singleRate.toFixed(4)} ${toCurr}`;
-    }
-
-    function swapCurrencyPair() {
-      const fromEl = document.getElementById('calc-from');
-      const toEl = document.getElementById('calc-to');
-      const temp = fromEl.value;
-      fromEl.value = toEl.value;
-      toEl.value = temp;
-      calculateCurrency();
-    }
-
-    window.onload = function() {
-      loadFromLocalStorage();
-      initFirebase();
-      renderActiveTab();
-    };
-  </script>
+    <!-- FIREBASE MODULE & APPLICATION LOGIC -->
+    
 </body>
 </html>

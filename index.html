@@ -658,9 +658,11 @@
             onAuthStateChanged 
         } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { 
-            getFirestore, 
+            initializeFirestore,
             collection, 
             doc, 
+            query,
+            where,
             onSnapshot, 
             getDoc,
             setDoc, 
@@ -696,6 +698,7 @@
             isOnline: navigator.onLine,
             cloudInitializedVaults: new Set(),
             pendingWriteIds: new Set(),
+            writeQueues: new Map(),
             logs: []
         };
 
@@ -778,7 +781,12 @@
                 addLog(`Initializing Firebase Services (App ID: ${window.ZenApp.appId})...`);
                 window.ZenApp.app = initializeApp(firebaseConfig);
                 window.ZenApp.auth = getAuth(window.ZenApp.app);
-                window.ZenApp.db = getFirestore(window.ZenApp.app);
+                window.ZenApp.db = initializeFirestore(window.ZenApp.app, {
+                    // Auto-detect networks where Firestore's normal transport stalls.
+                    // This is especially useful on corporate/VPN/mobile networks.
+                    experimentalAutoDetectLongPolling: true,
+                    useFetchStreams: false
+                });
 
                 updateSyncBadge('syncing', 'Connecting');
 
@@ -855,13 +863,11 @@
             return doc(getTripsCollectionRef(), tripId);
         }
 
-        function getVaultTripsFromSnapshot(snapshot, vaultId) {
+        function getVaultTripsFromSnapshot(snapshot) {
             const trips = [];
             snapshot.forEach((docSnap) => {
                 const data = docSnap.data();
-                if (data && String(data.vaultId || '').trim().toUpperCase() === vaultId) {
-                    trips.push({ ...data, id: docSnap.id });
-                }
+                if (data) trips.push({ ...data, id: docSnap.id });
             });
             return trips;
         }
@@ -914,13 +920,19 @@
 
             let tripsRef;
             try {
-                tripsRef = getTripsCollectionRef();
+                // IMPORTANT: subscribe only to this vault instead of downloading
+                // every trip in every vault and filtering in the browser.
+                // This materially reduces the initial snapshot size and sync latency.
+                tripsRef = query(
+                    getTripsCollectionRef(),
+                    where('vaultId', '==', vaultId)
+                );
 
                 window.ZenApp.unsubscribeListener = onSnapshot(
                     tripsRef,
                     { includeMetadataChanges: true },
                     async (snapshot) => {
-                        const vaultTrips = getVaultTripsFromSnapshot(snapshot, vaultId);
+                        const vaultTrips = getVaultTripsFromSnapshot(snapshot);
                         const isInitialServerSnapshot =
                             !window.ZenApp.cloudInitializedVaults.has(vaultId) &&
                             !snapshot.metadata.fromCache &&
@@ -1025,42 +1037,65 @@
         }
 
         // --- FIRESTORE PERSISTENCE HELPER ---
-        async function saveActiveTripToCloud(trip) {
+        // Queue writes per trip so rapid edits cannot race each other.
+        // Each edit still feels immediate because the UI/cache are updated first.
+        function queueTripWrite(trip) {
+            const tripId = trip.id;
+            const previous = window.ZenApp.writeQueues.get(tripId) || Promise.resolve();
+            const next = previous.catch(() => {}).then(async () => {
+                if (!window.ZenApp.db || !window.ZenApp.currentUser) {
+                    throw new Error('Firebase is not connected/authenticated.');
+                }
+
+                window.ZenApp.pendingWriteIds.add(tripId);
+                try {
+                    await setDoc(getTripDocRef(tripId), {
+                        ...trip,
+                        serverUpdatedAt: serverTimestamp()
+                    });
+                } finally {
+                    window.ZenApp.pendingWriteIds.delete(tripId);
+                }
+            });
+            window.ZenApp.writeQueues.set(tripId, next.finally(() => {
+                if (window.ZenApp.writeQueues.get(tripId) === next) {
+                    window.ZenApp.writeQueues.delete(tripId);
+                }
+            }));
+            return next;
+        }
+
+        function saveActiveTripToCloud(trip) {
             if (!trip || !trip.id) return;
 
             const vaultId = window.ZenApp.activeVaultId;
             trip.vaultId = vaultId;
             trip.updatedAt = Date.now();
 
+            // Instant local update. Do not wait for Firestore before repainting.
             saveVaultToLocalCache(vaultId, window.ZenApp.trips);
             renderApp();
 
             if (!window.ZenApp.db || !window.ZenApp.currentUser) {
-                addLog("Saved locally, but Firebase is not connected/authenticated.", 'error');
+                addLog('Saved locally; Firebase is not connected/authenticated.', 'error');
                 updateSyncBadge('offline', 'Not Synced');
                 return;
             }
 
-            const tripId = trip.id;
-            window.ZenApp.pendingWriteIds.add(tripId);
-            updateSyncBadge('syncing', 'Saving...');
+            updateSyncBadge('syncing', 'Syncing...');
 
-            try {
-                await setDoc(getTripDocRef(tripId), {
-                    ...trip,
-                    vaultId,
-                    updatedAt: trip.updatedAt,
-                    serverUpdatedAt: serverTimestamp()
+            // Fire-and-track instead of blocking the UI on the network round trip.
+            queueTripWrite(trip)
+                .then(() => {
+                    addLog(`Trip "${trip.title}" synced to Firestore.`, 'success');
+                    if (window.ZenApp.writeQueues.size === 0) {
+                        updateSyncBadge('online', 'Live Synced');
+                    }
+                })
+                .catch((err) => {
+                    addLog(`Failed to sync trip "${trip.title}": ${err.code || 'unknown'} - ${err.message}`, 'error');
+                    updateSyncBadge('offline', 'Sync Failed');
                 });
-
-                window.ZenApp.pendingWriteIds.delete(tripId);
-                addLog(`Trip "${trip.title}" synced to Firestore.`, 'success');
-                updateSyncBadge('online', 'Live Synced');
-            } catch (err) {
-                window.ZenApp.pendingWriteIds.delete(tripId);
-                addLog(`Failed to sync trip "${trip.title}": ${err.code || 'unknown'} - ${err.message}`, 'error');
-                updateSyncBadge('offline', 'Sync Failed');
-            }
         }
 
         async function deleteTripFromCloud(tripId) {

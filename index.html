@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>ZenTravel - Minimalist Trip Planner</title>
 
-  <!-- Tailwind CSS CDN -->
+  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -59,7 +59,7 @@
       -webkit-tap-highlight-color: transparent;
     }
     
-    /* Dark Mode Glass */
+    /* Dark Mode Glass Styling */
     .dark .glass-card {
       background: rgba(30, 41, 59, 0.75);
       backdrop-filter: blur(16px);
@@ -73,7 +73,7 @@
       border-top: 1px solid rgba(255, 255, 255, 0.08);
     }
 
-    /* Light Mode Glass */
+    /* Light Mode Glass Styling */
     .glass-card {
       background: rgba(255, 255, 255, 0.85);
       backdrop-filter: blur(16px);
@@ -108,7 +108,6 @@
         </div>
       </div>
 
-      <!-- Header Controls & Sync Badge -->
       <div class="flex items-center space-x-1.5">
         <!-- Theme Toggle -->
         <button onclick="toggleTheme()" class="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 flex items-center justify-center border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 transition active:scale-95 tap-highlight-none" title="Toggle Light/Dark Theme">
@@ -117,13 +116,13 @@
 
         <!-- Vault Sync Button -->
         <button id="vault-badge-btn" onclick="openVaultModal()" class="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-full bg-slate-200/80 dark:bg-slate-800/90 hover:bg-slate-300 dark:hover:bg-slate-700/80 border border-slate-300 dark:border-slate-700 transition active:scale-[0.96] tap-highlight-none">
-          <span id="sync-indicator" class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span id="sync-indicator" class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
           <span class="text-xs font-mono text-slate-700 dark:text-slate-300 font-semibold" id="header-vault-id">ZEN-8492</span>
           <i class="fa-solid fa-arrows-rotate text-[10px] text-slate-500 dark:text-slate-400"></i>
         </button>
 
-        <!-- Tools / Currency Calculator -->
-        <button onclick="openToolsModal()" class="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 flex items-center justify-center border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 transition active:scale-95 tap-highlight-none" title="Tools & Currency">
+        <!-- Currency & Exchange Tools -->
+        <button onclick="openToolsModal()" class="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 flex items-center justify-center border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 transition active:scale-95 tap-highlight-none" title="Currency Pairs & Converter">
           <i class="fa-solid fa-calculator text-xs"></i>
         </button>
 
@@ -134,7 +133,6 @@
       </div>
     </header>
 
-    <!-- MAIN VIEWS CONTAINER -->
     <main id="content-container" class="flex-1 overflow-y-auto px-4 py-4 space-y-4 pb-24">
       <!-- Dynamic Views rendered here via JS -->
     </main>
@@ -202,7 +200,7 @@
             Join
           </button>
         </div>
-        <p class="text-[11px] text-slate-500 dark:text-slate-400 leading-tight">Entering an existing Vault Code connects all synced trip plans, flights, itineraries, and expenses instantaneously.</p>
+        <p class="text-[11px] text-slate-500 dark:text-slate-400 leading-tight">Entering an existing Vault Code connects all synced trip plans, flights, itineraries, and expenses instantaneously across any browser session.</p>
       </div>
 
       <div class="mt-4 pt-3 border-t border-slate-200 dark:border-slate-800 flex justify-between items-center">
@@ -289,7 +287,7 @@
           </button>
         </div>
 
-        <!-- DIAGNOSTIC CONSOLE LOGS & COPY BUTTON -->
+        <!-- DIAGNOSTIC CONSOLE LOGS -->
         <div>
           <div class="flex justify-between items-center mb-1.5">
             <span class="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Console Diagnostic Logs</span>
@@ -305,6 +303,79 @@
             <div>[INIT] Diagnostics HUD mounted successfully...</div>
           </div>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CURRENCY TOOLS MODAL WITH SELECTABLE PAIRS -->
+  <div id="tools-modal" class="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="glass-card w-full max-w-sm rounded-2xl p-5 border border-slate-200 dark:border-slate-700 shadow-2xl relative space-y-4">
+      <button onclick="closeToolsModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 dark:hover:text-white">
+        <i class="fa-solid fa-xmark text-lg"></i>
+      </button>
+      
+      <div class="flex items-center space-x-2">
+        <i class="fa-solid fa-calculator text-brand-600 dark:text-brand-400"></i>
+        <h3 class="text-base font-bold text-slate-900 dark:text-white">Currency Pair Converter</h3>
+      </div>
+
+      <div class="bg-slate-100 dark:bg-slate-800/80 p-3.5 rounded-xl border border-slate-200 dark:border-slate-700 space-y-3">
+        <!-- FROM CURRENCY SELECTION -->
+        <div>
+          <label class="block text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-1">From Amount & Currency</label>
+          <div class="flex items-center space-x-2">
+            <input type="number" id="calc-amount" value="100" step="any" oninput="calculateCurrency()" class="flex-1 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-800 dark:text-white font-mono">
+            <select id="calc-from" onchange="calculateCurrency()" class="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-2 py-2 text-xs text-slate-800 dark:text-white font-semibold">
+              <option value="SGD" selected>SGD (S$)</option>
+              <option value="USD">USD ($)</option>
+              <option value="EUR">EUR (€)</option>
+              <option value="GBP">GBP (£)</option>
+              <option value="JPY">JPY (¥)</option>
+              <option value="AUD">AUD (A$)</option>
+              <option value="CAD">CAD (C$)</option>
+              <option value="MYR">MYR (RM)</option>
+              <option value="THB">THB (฿)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- SWAP & DIRECTION INDICATOR -->
+        <div class="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 px-1">
+          <span>Target Currency:</span>
+          <button onclick="swapCurrencyPair()" class="p-1 px-2.5 rounded-lg bg-slate-200 dark:bg-slate-700 hover:bg-brand-500 hover:text-white text-slate-700 dark:text-slate-200 text-xs transition flex items-center space-x-1">
+            <i class="fa-solid fa-right-left"></i>
+            <span>Swap Pair</span>
+          </button>
+        </div>
+
+        <!-- TO CURRENCY SELECTION -->
+        <div>
+          <div class="flex items-center space-x-2">
+            <select id="calc-to" onchange="calculateCurrency()" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white font-semibold">
+              <option value="USD" selected>USD ($) - US Dollar</option>
+              <option value="SGD">SGD (S$) - Singapore Dollar</option>
+              <option value="EUR">EUR (€) - Euro</option>
+              <option value="GBP">GBP (£) - British Pound</option>
+              <option value="JPY">JPY (¥) - Japanese Yen</option>
+              <option value="AUD">AUD (A$) - Australian Dollar</option>
+              <option value="CAD">CAD (C$) - Canadian Dollar</option>
+              <option value="MYR">MYR (RM) - Malaysian Ringgit</option>
+              <option value="THB">THB (฿) - Thai Baht</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- RESULT DISPLAY -->
+        <div class="bg-white dark:bg-slate-950 p-3 rounded-xl border border-slate-200 dark:border-slate-800 text-center space-y-1">
+          <span class="text-[10px] uppercase tracking-wider text-slate-400 font-semibold block">Converted Equivalent</span>
+          <span id="calc-result" class="text-xl font-bold font-mono text-brand-600 dark:text-brand-300">$74.63 USD</span>
+        </div>
+      </div>
+
+      <!-- CUSTOMIZABLE EXCHANGE RATE FOOTER -->
+      <div class="pt-2 border-t border-slate-200 dark:border-slate-800 flex justify-between items-center text-xs">
+        <span id="calc-rate-label" class="text-[11px] text-slate-500 dark:text-slate-400 font-mono">1 SGD ≈ 0.746 USD</span>
+        <button onclick="closeToolsModal()" class="px-3 py-1 bg-brand-600 hover:bg-brand-500 text-white rounded-lg text-xs font-medium">Done</button>
       </div>
     </div>
   </div>
@@ -329,35 +400,35 @@
         <div class="grid grid-cols-2 gap-2">
           <div>
             <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Airline</label>
-            <input type="text" id="flight-airline" required placeholder="Japan Airlines" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white">
+            <input type="text" id="flight-airline" required placeholder="Singapore Airlines" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white">
           </div>
           <div>
             <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Flight No.</label>
-            <input type="text" id="flight-num" required placeholder="JL001" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white">
+            <input type="text" id="flight-num" required placeholder="SQ024" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white">
           </div>
         </div>
         <div>
           <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Route (From -> To)</label>
-          <input type="text" id="flight-route" required placeholder="SFO -> HND" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white">
+          <input type="text" id="flight-route" required placeholder="SIN -> MCO" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white">
         </div>
         <div class="grid grid-cols-2 gap-2">
           <div>
             <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Departure</label>
-            <input type="text" id="flight-dept" placeholder="Oct 12, 11:30 AM" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white">
+            <input type="text" id="flight-dept" placeholder="Nov 10, 09:15 AM" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white">
           </div>
           <div>
             <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Arrival</label>
-            <input type="text" id="flight-arr" placeholder="Oct 13, 3:15 PM" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white">
+            <input type="text" id="flight-arr" placeholder="Nov 10, 07:30 PM" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white">
           </div>
         </div>
         <div class="grid grid-cols-2 gap-2">
           <div>
             <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">PNR / Confirm</label>
-            <input type="text" id="flight-pnr" placeholder="XYZ123" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white font-mono uppercase">
+            <input type="text" id="flight-pnr" placeholder="SQ982X" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white font-mono uppercase">
           </div>
           <div>
             <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Gate / Seat</label>
-            <input type="text" id="flight-gate" placeholder="Gate B12, 14A" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white">
+            <input type="text" id="flight-gate" placeholder="Gate B12, 32K" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white">
           </div>
         </div>
         <div class="flex space-x-2 pt-2">
@@ -379,12 +450,12 @@
         <input type="hidden" id="hotel-id">
         <div>
           <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Property Name</label>
-          <input type="text" id="hotel-name" required placeholder="Kyoto Ryokan Park" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white">
+          <input type="text" id="hotel-name" required placeholder="Universal Cabana Bay Resort" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white">
         </div>
         <div class="grid grid-cols-2 gap-2">
           <div>
-            <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Area / Tag</label>
-            <input type="text" id="hotel-area" placeholder="Gion District" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white">
+            <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">City / Area</label>
+            <input type="text" id="hotel-area" placeholder="Orlando" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white">
           </div>
           <div>
             <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Confirmation</label>
@@ -394,16 +465,16 @@
         <div class="grid grid-cols-2 gap-2">
           <div>
             <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Check-In</label>
-            <input type="text" id="hotel-in" placeholder="Oct 13 (3 PM)" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white">
+            <input type="text" id="hotel-in" placeholder="Nov 10 (3 PM)" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white">
           </div>
           <div>
             <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Check-Out</label>
-            <input type="text" id="hotel-out" placeholder="Oct 18 (11 AM)" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white">
+            <input type="text" id="hotel-out" placeholder="Nov 17 (11 AM)" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white">
           </div>
         </div>
         <div>
           <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Address / Notes</label>
-          <input type="text" id="hotel-address" placeholder="123 Hanami Lane, Higashiyama" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white">
+          <input type="text" id="hotel-address" placeholder="6523 Hollywood Way, Orlando, FL" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white">
         </div>
         <div class="flex space-x-2 pt-2">
           <button type="button" onclick="closeHotelModal()" class="flex-1 py-2 bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-medium">Cancel</button>
@@ -423,7 +494,7 @@
       <form onsubmit="saveItineraryItem(event)" class="space-y-3">
         <div>
           <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Day / Date Label</label>
-          <input type="text" id="itin-day" required placeholder="Day 1 - Oct 14" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white">
+          <input type="text" id="itin-day" required placeholder="Day 2 - Nov 11" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white">
         </div>
         <div class="grid grid-cols-3 gap-2">
           <div>
@@ -432,12 +503,12 @@
           </div>
           <div class="col-span-2">
             <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Activity Title</label>
-            <input type="text" id="itin-title" required placeholder="Visit Fushimi Inari Shrine" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white">
+            <input type="text" id="itin-title" required placeholder="Universal Studios Florida" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white">
           </div>
         </div>
         <div>
           <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Location / Notes</label>
-          <input type="text" id="itin-notes" placeholder="Fushimi Ward, Kyoto (Go early)" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white">
+          <input type="text" id="itin-notes" placeholder="Harry Potter Diagon Alley & Rides" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white">
         </div>
         <div class="flex space-x-2 pt-2">
           <button type="button" onclick="closeItineraryModal()" class="flex-1 py-2 bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-medium">Cancel</button>
@@ -457,58 +528,21 @@
       <form onsubmit="saveTripOverview(event)" class="space-y-3">
         <div>
           <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Trip Destination</label>
-          <input type="text" id="trip-dest-input" required placeholder="Tokyo & Kyoto, Japan" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white">
+          <input type="text" id="trip-dest-input" required placeholder="Orlando & New York, USA" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white">
         </div>
         <div>
           <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Dates Range</label>
-          <input type="text" id="trip-dates-input" required placeholder="Oct 12 - Oct 24, 2026" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white">
+          <input type="text" id="trip-dates-input" required placeholder="Nov 10 - Nov 24, 2026" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white">
         </div>
         <div>
-          <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Overall Budget Limit ($)</label>
-          <input type="number" id="trip-budget-input" required placeholder="3500" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white">
+          <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Overall Budget Limit (SGD S$)</label>
+          <input type="number" id="trip-budget-input" required placeholder="8000" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white">
         </div>
         <div class="flex space-x-2 pt-2">
           <button type="button" onclick="closeTripEditModal()" class="flex-1 py-2 bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-medium">Cancel</button>
           <button type="submit" class="flex-1 py-2 bg-brand-600 hover:bg-brand-500 text-white rounded-xl text-xs font-medium">Update Overview</button>
         </div>
       </form>
-    </div>
-  </div>
-
-  <!-- CURRENCY TOOLS MODAL -->
-  <div id="tools-modal" class="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm hidden flex items-center justify-center p-4">
-    <div class="glass-card w-full max-w-sm rounded-2xl p-5 border border-slate-200 dark:border-slate-700 shadow-2xl relative space-y-4">
-      <button onclick="closeToolsModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 dark:hover:text-white">
-        <i class="fa-solid fa-xmark text-lg"></i>
-      </button>
-      <div class="flex items-center space-x-2">
-        <i class="fa-solid fa-calculator text-brand-600 dark:text-brand-400"></i>
-        <h3 class="text-base font-bold text-slate-900 dark:text-white">Currency Converter</h3>
-      </div>
-
-      <div class="bg-slate-100 dark:bg-slate-800/80 p-3.5 rounded-xl border border-slate-200 dark:border-slate-700 space-y-3">
-        <div class="flex items-center space-x-2">
-          <input type="number" id="calc-amount" value="100" oninput="calculateCurrency()" class="flex-1 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-800 dark:text-white font-mono">
-          <select id="calc-from" onchange="calculateCurrency()" class="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-2 py-2 text-xs text-slate-800 dark:text-white">
-            <option value="USD">USD ($)</option>
-            <option value="EUR">EUR (€)</option>
-            <option value="GBP">GBP (£)</option>
-            <option value="SGD">SGD ($)</option>
-          </select>
-        </div>
-        <div class="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 px-1">
-          <span>Converted to JPY (¥):</span>
-          <i class="fa-solid fa-arrow-down-long"></i>
-        </div>
-        <div class="bg-white dark:bg-slate-950 p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-center">
-          <span id="calc-result" class="text-xl font-bold font-mono text-brand-600 dark:text-brand-300">¥15,400</span>
-        </div>
-      </div>
-
-      <div class="pt-2 border-t border-slate-200 dark:border-slate-800 flex justify-between items-center">
-        <span class="text-[11px] text-slate-500 dark:text-slate-400">Rate: 1 USD ≈ 154 JPY</span>
-        <button onclick="closeToolsModal()" class="px-3 py-1 bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-lg text-xs font-medium">Done</button>
-      </div>
     </div>
   </div>
 
@@ -527,23 +561,23 @@
             <option value="Lodging">Lodging</option>
             <option value="Dining">Dining & Food</option>
             <option value="Activities">Activities & Tours</option>
-            <option value="Transit">Transport & Trains</option>
+            <option value="Transit">Transport & Rides</option>
             <option value="Shopping">Shopping & Misc</option>
           </select>
         </div>
         <div class="grid grid-cols-2 gap-2">
           <div>
             <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Item Title</label>
-            <input type="text" id="exp-title" required placeholder="Shinkansen Bullet Train Pass" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white">
+            <input type="text" id="exp-title" required placeholder="Universal Studios Pass" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white">
           </div>
           <div>
-            <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Cost ($)</label>
-            <input type="number" step="0.01" id="exp-amount" required placeholder="210.00" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white">
+            <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Cost (SGD S$)</label>
+            <input type="number" step="0.01" id="exp-amount" required placeholder="250.00" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white">
           </div>
         </div>
         <div>
           <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Date</label>
-          <input type="text" id="exp-date" placeholder="Oct 14" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white">
+          <input type="text" id="exp-date" placeholder="Nov 11" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white">
         </div>
         <div class="flex space-x-2 pt-2">
           <button type="button" onclick="closeExpenseModal()" class="flex-1 py-2 bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-medium">Cancel</button>
@@ -564,15 +598,15 @@
         <div>
           <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Task Category</label>
           <select id="todo-cat" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white focus:outline-none focus:border-brand-500">
-            <option value="Packing">Packing List</option>
-            <option value="Documents">Documents & Travel</option>
+            <option value="Documents">Documents & Visas</option>
             <option value="Booking">Bookings & Reservations</option>
+            <option value="Packing">Packing List</option>
             <option value="Misc">Miscellaneous</option>
           </select>
         </div>
         <div>
           <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Task Title</label>
-          <input type="text" id="todo-title" required placeholder="Pack universal power adapter" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white">
+          <input type="text" id="todo-title" required placeholder="Apply for US ESTA Visa Waiver" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white">
         </div>
         <div class="flex space-x-2 pt-2">
           <button type="button" onclick="closeTodoModal()" class="flex-1 py-2 bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-medium">Cancel</button>
@@ -583,11 +617,11 @@
   </div>
 
   <script>
-    // App Identifier & Firebase API Configuration
-    const appId = typeof __app_id !== 'undefined' ? __app_id : 'zentravel-app';
+    // Standardized fixed App Identifier for cross-session/browser cloud sync
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'zentravel-planner-v1';
 
-    // Provided User Firebase Config
-    const userFirebaseConfig = {
+    // Provided User Firebase Config with fallback
+    const defaultFirebaseConfig = {
       apiKey: "AIzaSyA2wyg7enqbm29V4v31hvNj1ERKdyZ41p4",
       authDomain: "my-zen-travel.firebaseapp.com",
       projectId: "my-zen-travel",
@@ -596,7 +630,7 @@
       appId: "1:730995974564:web:0a30fb7fad38ad962aa131"
     };
 
-    // Global Trip State Variables
+    // Global State Variables
     let activeTab = 'dashboard';
     let vaultId = localStorage.getItem('zentravel_vault_id') || 'ZEN-8492';
     let db = null;
@@ -604,88 +638,122 @@
     let currentUser = null;
     let unsubscribeVaultListener = null;
 
-    // Initial Default Data Structure
+    // Exchange Rates Table (Base: USD = 1.0)
+    // Default Home Currency: SGD (1 USD = 1.34 SGD, 1 SGD = 0.746 USD)
+    const exchangeRatesToUSD = {
+      USD: 1.0,
+      SGD: 1.34,
+      EUR: 0.92,
+      GBP: 0.78,
+      JPY: 154.20,
+      AUD: 1.52,
+      CAD: 1.36,
+      MYR: 4.42,
+      THB: 36.50
+    };
+
+    // Updated Sample Data: Orlando & New York Trip with Home Currency = SGD
     let tripData = {
-      destination: "Tokyo & Kyoto, Japan",
-      dates: "Oct 12 - Oct 24, 2026",
-      totalBudget: 3500,
+      destination: "Orlando & New York, USA",
+      dates: "Nov 10 - Nov 24, 2026",
+      homeCurrency: "SGD",
+      totalBudget: 8000,
       flights: [
         {
           id: 'f-1',
           type: 'Outbound',
-          airline: 'Japan Airlines',
-          flightNum: 'JL001',
-          route: 'SFO -> HND',
-          dept: 'Oct 12, 11:30 AM',
-          arr: 'Oct 13, 03:15 PM',
-          pnr: 'JL782X',
-          gate: 'Gate A12, 14A'
+          airline: 'Singapore Airlines',
+          flightNum: 'SQ024',
+          route: 'SIN -> MCO',
+          dept: 'Nov 10, 09:15 AM',
+          arr: 'Nov 10, 07:30 PM',
+          pnr: 'SQ982X',
+          gate: 'Gate B12, 32K'
         },
         {
           id: 'f-2',
+          type: 'Transit',
+          airline: 'Delta Air Lines',
+          flightNum: 'DL1420',
+          route: 'MCO -> JFK',
+          dept: 'Nov 17, 11:00 AM',
+          arr: 'Nov 17, 01:25 PM',
+          pnr: 'DL441Y',
+          gate: 'Gate 71, 18A'
+        },
+        {
+          id: 'f-3',
           type: 'Return',
-          airline: 'Japan Airlines',
-          flightNum: 'JL002',
-          route: 'KIX -> SFO',
-          dept: 'Oct 24, 05:40 PM',
-          arr: 'Oct 24, 11:20 AM',
-          pnr: 'JL782X',
-          gate: 'Gate B04, 14C'
+          airline: 'Singapore Airlines',
+          flightNum: 'SQ023',
+          route: 'JFK -> SIN',
+          dept: 'Nov 24, 08:50 PM',
+          arr: 'Nov 26, 06:15 AM',
+          pnr: 'SQ982X',
+          gate: 'Gate A04, 32J'
         }
       ],
       hotels: [
         {
           id: 'h-1',
-          name: 'Shinjuku Granbell Hotel',
-          area: 'Tokyo',
-          pnr: 'SGH-9910',
-          checkIn: 'Oct 13 (3:00 PM)',
-          checkOut: 'Oct 18 (11:00 AM)',
-          address: '2-14-5 Kabukicho, Shinjuku, Tokyo'
+          name: "Universal Cabana Bay Resort",
+          area: 'Orlando',
+          pnr: 'CB-8821',
+          checkIn: 'Nov 10 (3:00 PM)',
+          checkOut: 'Nov 17 (11:00 AM)',
+          address: '6523 Hollywood Way, Orlando, FL'
         },
         {
           id: 'h-2',
-          name: 'Gion Ryokan Karaku',
-          area: 'Kyoto',
-          pnr: 'GRK-3341',
-          checkIn: 'Oct 18 (4:00 PM)',
-          checkOut: 'Oct 24 (10:00 AM)',
-          address: 'Gion-machi Minamigawa, Kyoto'
+          name: 'The Manhattan at Times Square',
+          area: 'New York City',
+          pnr: 'MTS-4091',
+          checkIn: 'Nov 17 (3:00 PM)',
+          checkOut: 'Nov 24 (11:00 AM)',
+          address: '790 7th Ave, New York, NY'
         }
       ],
       itinerary: [
-        { id: 'i-1', day: 'Day 1 - Oct 13', time: '04:30 PM', title: 'Hotel Check-in & Rest', notes: 'Shinjuku area exploring & Ramen dinner', done: true },
-        { id: 'i-2', day: 'Day 2 - Oct 14', time: '09:00 AM', title: 'Meiji Shrine & Harajuku', notes: 'Walk through Yoyogi Park & Takeshita St', done: true },
-        { id: 'i-3', day: 'Day 2 - Oct 14', time: '02:00 PM', title: 'Shibuya Crossing & Sky Tower', notes: 'Pre-booked tickets for 3:30 PM sunset', done: false },
-        { id: 'i-4', day: 'Day 3 - Oct 15', time: '08:00 AM', title: 'Tsukiji Outer Market Food Tour', notes: 'Fresh sushi breakfast & matcha tasting', done: false },
-        { id: 'i-5', day: 'Day 6 - Oct 18', time: '11:30 AM', title: 'Shinkansen Bullet Train to Kyoto', notes: 'Reserved Seats - Mount Fuji View (Right Side)', done: false }
+        { id: 'i-1', day: 'Day 1 - Nov 10', time: '08:00 PM', title: 'Arrive Orlando & Hotel Check-in', notes: 'Unwind at Cabana Bay Pool & Diner', done: true },
+        { id: 'i-2', day: 'Day 2 - Nov 11', time: '09:00 AM', title: 'Universal Studios & Islands of Adventure', notes: 'Park-to-Park pass, Harry Potter Diagon Alley', done: true },
+        { id: 'i-3', day: 'Day 3 - Nov 12', time: '08:30 AM', title: 'Walt Disney World - Magic Kingdom', notes: 'Fireworks show at Cinderella Castle', done: true },
+        { id: 'i-4', day: 'Day 5 - Nov 14', time: '10:00 AM', title: 'Kennedy Space Center Tour', notes: 'Rocket Garden & Space Shuttle Atlantis', done: false },
+        { id: 'i-5', day: 'Day 8 - Nov 17', time: '03:30 PM', title: 'Check-in NYC Hotel & Times Square Walk', notes: 'Walk through Broadway & Rockefeller Center', done: false },
+        { id: 'i-6', day: 'Day 9 - Nov 18', time: '09:30 AM', title: 'Statue of Liberty & Ellis Island', notes: 'Ferry booked from Battery Park', done: false },
+        { id: 'i-7', day: 'Day 10 - Nov 19', time: '02:00 PM', title: 'Broadway Show - The Lion King', notes: 'Minskoff Theatre Orchestra Seats', done: false }
       ],
       expenses: [
-        { id: 'e-1', category: 'Flights', title: 'Roundtrip JAL Flights', amount: 1120.00, date: 'Sep 01' },
-        { id: 'e-2', category: 'Lodging', title: 'Tokyo Hotel Deposit', amount: 650.00, date: 'Sep 05' },
-        { id: 'e-3', category: 'Lodging', title: 'Kyoto Ryokan Stay', amount: 580.00, date: 'Sep 10' },
-        { id: 'e-4', category: 'Transit', title: '7-Day JR Pass', amount: 320.00, date: 'Sep 15' },
-        { id: 'e-5', category: 'Activities', title: 'Shibuya Sky & TeamLab', amount: 54.00, date: 'Sep 20' }
+        { id: 'e-1', category: 'Flights', title: 'SQ Roundtrip Singapore-US', amount: 2250.00, date: 'Oct 01' },
+        { id: 'e-2', category: 'Lodging', title: 'Universal Cabana Bay (7 Nights)', amount: 1688.00, date: 'Oct 05' },
+        { id: 'e-3', category: 'Lodging', title: 'NYC Times Square Hotel (7 Nights)', amount: 2251.00, date: 'Oct 10' },
+        { id: 'e-4', category: 'Activities', title: 'Disney & Universal Theme Passes', amount: 777.00, date: 'Oct 12' },
+        { id: 'e-5', category: 'Transit', title: 'MCO to JFK Flight Segment', amount: 248.00, date: 'Oct 15' },
+        { id: 'e-6', category: 'Dining', title: 'Dining & Food Budget', amount: 650.00, date: 'Nov 12' }
       ],
       todos: [
-        { id: 't-1', category: 'Documents', title: 'Passport renewal / check expiration', done: true },
-        { id: 't-2', category: 'Documents', title: 'Fill Visit Japan Web customs form online', done: true },
-        { id: 't-3', category: 'Booking', title: 'Reserve Pocket Wi-Fi router for Tokyo pickup', done: true },
-        { id: 't-4', category: 'Packing', title: 'Universal plug adapter & power bank', done: false },
-        { id: 't-5', category: 'Packing', title: 'Comfortable walking shoes & light rain jacket', done: false },
-        { id: 't-6', category: 'Misc', title: 'Notify credit cards of foreign travel', done: false }
+        { id: 't-1', category: 'Documents', title: 'Apply for US ESTA Visa Waiver online', done: true },
+        { id: 't-2', category: 'Documents', title: 'Check passport expiration date (>6 months)', done: true },
+        { id: 't-3', category: 'Booking', title: 'Purchase Universal Express Unlimited Pass', done: true },
+        { id: 't-4', category: 'Packing', title: 'US Type A/B Power Adapters & Portable Power Bank', done: false },
+        { id: 't-5', category: 'Booking', title: 'Reserve Broadway Show Tickets for NYC', done: false },
+        { id: 't-6', category: 'Misc', title: 'Activate overseas card spending in banking app', done: false }
       ]
     };
 
+    // Strictly adheres to Firestore Rule 1: /artifacts/{appId}/public/data/vaults/{vaultId}
     function getVaultDocRef(vId) {
       if (!db) return null;
-      // Rule 1 Strict Path: /artifacts/{appId}/public/data/{collectionName}/{docId}
       return db.collection('artifacts').doc(appId).collection('public').doc('data').collection('vaults').doc(vId);
+    }
+
+    function getUserDocRef(uid) {
+      if (!db) return null;
+      return db.collection('artifacts').doc(appId).collection('public').doc('data').collection('users').doc(uid);
     }
 
     function initFirebase() {
       try {
-        let finalConfig = userFirebaseConfig;
+        let finalConfig = defaultFirebaseConfig;
         if (typeof __firebase_config !== 'undefined') {
           try {
             finalConfig = JSON.parse(__firebase_config);
@@ -700,6 +768,7 @@
 
         logDiagnostic("[FIREBASE] Initialized with API Key: " + finalConfig.apiKey.substring(0, 8) + "...");
 
+        // RULE 3: Authenticate FIRST before listening/saving
         const initialToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
         if (initialToken) {
           auth.signInWithCustomToken(initialToken).catch(() => auth.signInAnonymously());
@@ -711,12 +780,44 @@
           if (user) {
             currentUser = user;
             updateUserUI(user);
-            logDiagnostic(`[AUTH] Logged in as: ${user.isAnonymous ? 'Anonymous' : (user.email || 'Google User')} (UID: ${user.uid.substring(0, 8)}...)`);
-            setupVaultSync();
+            logDiagnostic(`[AUTH] Authenticated as: ${user.isAnonymous ? 'Anonymous' : (user.email || 'Google User')} (UID: ${user.uid.substring(0, 8)}...)`);
+            
+            if (!user.isAnonymous) {
+              const userRef = getUserDocRef(user.uid);
+              if (userRef) {
+                userRef.get().then((docSnap) => {
+                  if (docSnap.exists && docSnap.data() && docSnap.data().activeVaultId) {
+                    const userVault = docSnap.data().activeVaultId;
+                    logDiagnostic(`[USER] Bound to account active vault: ${userVault}`);
+                    if (userVault !== vaultId) {
+                      vaultId = userVault;
+                      localStorage.setItem('zentravel_vault_id', vaultId);
+                      document.getElementById('header-vault-id').innerText = vaultId;
+                      document.getElementById('modal-vault-id').innerText = vaultId;
+                    }
+                  } else {
+                    userRef.set({
+                      email: user.email,
+                      displayName: user.displayName || 'Google User',
+                      activeVaultId: vaultId,
+                      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                    }, { merge: true });
+                  }
+                  setupVaultSync();
+                }).catch((err) => {
+                  logDiagnostic(`[USER ERROR] Fetching user profile: ${err.message}`);
+                  setupVaultSync();
+                });
+              } else {
+                setupVaultSync();
+              }
+            } else {
+              setupVaultSync();
+            }
           } else {
             currentUser = null;
             updateUserUI(null);
-            logDiagnostic("[AUTH] User signed out");
+            logDiagnostic("[AUTH] Signed out");
           }
         });
       } catch (err) {
@@ -726,21 +827,28 @@
       }
     }
 
+    // Optimized multi-browser & multi-session real-time subscription
     function setupVaultSync() {
       if (!db || !currentUser) return;
 
       if (unsubscribeVaultListener) {
         unsubscribeVaultListener();
+        unsubscribeVaultListener = null;
       }
 
       const docRef = getVaultDocRef(vaultId);
       if (!docRef) return;
 
       const pathStr = `/artifacts/${appId}/public/data/vaults/${vaultId}`;
-      document.getElementById('hud-firestore-path').innerText = pathStr;
-      document.getElementById('sync-indicator').className = "w-2 h-2 rounded-full bg-amber-400 animate-pulse";
-      logDiagnostic(`[SYNC] Subscribing to path: ${pathStr}`);
+      const pathEl = document.getElementById('hud-firestore-path');
+      if (pathEl) pathEl.innerText = pathStr;
+      
+      const syncIndicator = document.getElementById('sync-indicator');
+      if (syncIndicator) syncIndicator.className = "w-2 h-2 rounded-full bg-amber-400 animate-pulse";
+      
+      logDiagnostic(`[SYNC] Listening to path: ${pathStr}`);
 
+      // Mandatory error callback in onSnapshot
       unsubscribeVaultListener = docRef.onSnapshot((docSnap) => {
         if (docSnap.exists) {
           const remoteData = docSnap.data();
@@ -748,16 +856,17 @@
             tripData = remoteData.tripData;
             saveToLocalStorage();
             renderActiveTab();
-            logDiagnostic(`[SYNC] Live data synced for Vault ${vaultId}`);
+            logDiagnostic(`[SYNC] Real-time data updated for Vault: ${vaultId}`);
           }
         } else {
-          logDiagnostic(`[SYNC] Vault ${vaultId} absent on cloud. Creating & uploading initial state...`);
+          logDiagnostic(`[SYNC] Vault ${vaultId} missing on cloud. Seeding current trip data...`);
           saveTripToVault();
         }
-        document.getElementById('sync-indicator').className = "w-2 h-2 rounded-full bg-emerald-500";
+        if (syncIndicator) syncIndicator.className = "w-2 h-2 rounded-full bg-emerald-500";
       }, (error) => {
         logDiagnostic(`[SYNC ERROR] ${error.message}`);
-        document.getElementById('sync-indicator').className = "w-2 h-2 rounded-full bg-rose-500";
+        if (syncIndicator) syncIndicator.className = "w-2 h-2 rounded-full bg-rose-500";
+        showToast(`Sync error: ${error.message}`, 'error');
       });
     }
 
@@ -771,14 +880,25 @@
       docRef.set({
         tripData: tripData,
         lastUpdated: firebase.firestore.FieldValue.serverTimestamp(),
-        updatedBy: currentUser.uid
+        updatedBy: currentUser.uid,
+        updatedByEmail: currentUser.email || 'Anonymous'
       }, { merge: true })
       .then(() => {
-        logDiagnostic(`[SAVE] Vault ${vaultId} state updated successfully`);
+        logDiagnostic(`[SAVE] Vault ${vaultId} saved to cloud`);
       })
       .catch((err) => {
         logDiagnostic(`[SAVE ERROR] Vault ${vaultId}: ${err.message}`);
       });
+
+      if (currentUser && !currentUser.isAnonymous) {
+        const userRef = getUserDocRef(currentUser.uid);
+        if (userRef) {
+          userRef.set({
+            activeVaultId: vaultId,
+            lastActive: firebase.firestore.FieldValue.serverTimestamp()
+          }, { merge: true }).catch(() => {});
+        }
+      }
     }
 
     function saveToLocalStorage() {
@@ -803,7 +923,7 @@
         return;
       }
       const provider = new firebase.auth.GoogleAuthProvider();
-      logDiagnostic("[AUTH] Requesting Google Sign-In popup...");
+      logDiagnostic("[AUTH] Google Sign-In popup requested...");
       auth.signInWithPopup(provider)
         .then((result) => {
           showToast(`Welcome ${result.user.displayName || 'Traveler'}!`);
@@ -834,30 +954,32 @@
       const headerUserIcon = document.getElementById('header-user-icon');
 
       if (user && !user.isAnonymous) {
-        modeEl.innerText = "Google User";
-        uidEl.innerText = user.uid;
-        nameEl.innerText = user.displayName || "Google User";
-        emailEl.innerText = user.email || "";
+        if (modeEl) modeEl.innerText = "Google User";
+        if (uidEl) uidEl.innerText = user.uid;
+        if (nameEl) nameEl.innerText = user.displayName || "Google User";
+        if (emailEl) emailEl.innerText = user.email || "";
         
-        if (user.photoURL) {
-          avatarEl.innerHTML = `<img src="${user.photoURL}" class="w-full h-full object-cover">`;
-        } else {
-          avatarEl.innerHTML = `<i class="fa-solid fa-user-check text-brand-500"></i>`;
+        if (avatarEl) {
+          if (user.photoURL) {
+            avatarEl.innerHTML = `<img src="${user.photoURL}" class="w-full h-full object-cover">`;
+          } else {
+            avatarEl.innerHTML = `<i class="fa-solid fa-user-check text-brand-500"></i>`;
+          }
         }
 
-        signinBtn.classList.add('hidden');
-        signoutBtn.classList.remove('hidden');
-        headerUserIcon.className = "fa-solid fa-user-check text-xs text-brand-500 dark:text-brand-400";
+        if (signinBtn) signinBtn.classList.add('hidden');
+        if (signoutBtn) signoutBtn.classList.remove('hidden');
+        if (headerUserIcon) headerUserIcon.className = "fa-solid fa-user-check text-xs text-brand-500 dark:text-brand-400";
       } else {
-        modeEl.innerText = user ? "Anonymous" : "Disconnected";
-        uidEl.innerText = user ? user.uid.substring(0, 12) + "..." : "None";
-        nameEl.innerText = "Anonymous Traveler";
-        emailEl.innerText = "Sign in to backup to Google Account";
-        avatarEl.innerHTML = `<i class="fa-solid fa-user"></i>`;
+        if (modeEl) modeEl.innerText = user ? "Anonymous" : "Disconnected";
+        if (uidEl) uidEl.innerText = user ? user.uid.substring(0, 12) + "..." : "None";
+        if (nameEl) nameEl.innerText = "Anonymous Traveler";
+        if (emailEl) emailEl.innerText = "Sign in to backup to Google Account";
+        if (avatarEl) avatarEl.innerHTML = `<i class="fa-solid fa-user"></i>`;
 
-        signinBtn.classList.remove('hidden');
-        signoutBtn.classList.add('hidden');
-        headerUserIcon.className = "fa-solid fa-user-gear text-xs";
+        if (signinBtn) signinBtn.classList.remove('hidden');
+        if (signoutBtn) signoutBtn.classList.add('hidden');
+        if (headerUserIcon) headerUserIcon.className = "fa-solid fa-user-gear text-xs";
       }
     }
 
@@ -873,10 +995,19 @@
       showToast("Triggered Cloud Vault Sync!");
     }
 
+    function logDiagnostic(msg) {
+      const logsEl = document.getElementById('diagnostic-logs');
+      if (!logsEl) return;
+      const timeStr = new Date().toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      const entry = document.createElement('div');
+      entry.innerText = `[${timeStr}] ${msg}`;
+      logsEl.appendChild(entry);
+      logsEl.scrollTop = logsEl.scrollHeight;
+    }
+
     function copyDiagnosticLogs() {
       const logsEl = document.getElementById('diagnostic-logs');
       const text = logsEl.innerText || logsEl.textContent;
-      
       const tempTextArea = document.createElement("textarea");
       tempTextArea.value = text;
       document.body.appendChild(tempTextArea);
@@ -888,16 +1019,6 @@
         showToast("Failed to copy logs", "error");
       }
       document.body.removeChild(tempTextArea);
-    }
-
-    function logDiagnostic(msg) {
-      const logsEl = document.getElementById('diagnostic-logs');
-      if (!logsEl) return;
-      const timeStr = new Date().toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
-      const entry = document.createElement('div');
-      entry.innerText = `[${timeStr}] ${msg}`;
-      logsEl.appendChild(entry);
-      logsEl.scrollTop = logsEl.scrollHeight;
     }
 
     function clearDiagnosticLogs() {
@@ -967,15 +1088,15 @@
             </button>
           </div>
 
-          <!-- COUNTDOWN / SUMMARY ROW -->
+          <!-- SUMMARY ROW -->
           <div class="grid grid-cols-3 gap-2 mt-4 pt-3 border-t border-slate-200 dark:border-slate-800 text-center">
             <div class="p-2 rounded-xl bg-slate-100/80 dark:bg-slate-800/50">
               <span class="text-xs text-slate-500 dark:text-slate-400 block font-medium">Outbound</span>
               <span class="text-sm font-bold text-slate-800 dark:text-slate-200 font-mono">${tripData.flights[0] ? tripData.flights[0].flightNum : 'N/A'}</span>
             </div>
             <div class="p-2 rounded-xl bg-slate-100/80 dark:bg-slate-800/50">
-              <span class="text-xs text-slate-500 dark:text-slate-400 block font-medium">Spent / Limit</span>
-              <span class="text-sm font-bold text-brand-600 dark:text-brand-400 font-mono">$${spent}</span>
+              <span class="text-xs text-slate-500 dark:text-slate-400 block font-medium">Spent (SGD)</span>
+              <span class="text-sm font-bold text-brand-600 dark:text-brand-400 font-mono">S$${spent.toFixed(0)}</span>
             </div>
             <div class="p-2 rounded-xl bg-slate-100/80 dark:bg-slate-800/50">
               <span class="text-xs text-slate-500 dark:text-slate-400 block font-medium">Tasks</span>
@@ -994,7 +1115,7 @@
               <span class="text-xs font-mono font-bold text-slate-400">${completedItin}/${tripData.itinerary.length}</span>
             </div>
             <h3 class="text-xs font-bold text-slate-900 dark:text-white">Itinerary Timeline</h3>
-            <p class="text-[10px] text-slate-500 dark:text-slate-400">View daily schedule</p>
+            <p class="text-[10px] text-slate-500 dark:text-slate-400">View Orlando & NYC plan</p>
           </div>
 
           <div onclick="switchTab('budget')" class="glass-card p-3.5 rounded-2xl cursor-pointer hover:border-brand-500/40 transition active:scale-[0.98]">
@@ -1005,7 +1126,7 @@
               <span class="text-xs font-mono font-bold text-slate-400">${percentSpent}%</span>
             </div>
             <h3 class="text-xs font-bold text-slate-900 dark:text-white">Budget Tracker</h3>
-            <p class="text-[10px] text-slate-500 dark:text-slate-400">Manage trip expenses</p>
+            <p class="text-[10px] text-slate-500 dark:text-slate-400">SGD S$${tripData.totalBudget} Limit</p>
           </div>
         </div>
 
@@ -1039,7 +1160,7 @@
         <div class="glass-card rounded-2xl p-4 space-y-3">
           <div class="flex justify-between items-center">
             <h3 class="text-xs font-bold text-slate-900 dark:text-white flex items-center">
-              <i class="fa-solid fa-list-check text-amber-500 mr-2"></i> Priority Pre-Trip Tasks
+              <i class="fa-solid fa-list-check text-amber-500 mr-2"></i> Priority Tasks
             </h3>
             <button onclick="switchTab('todo')" class="text-[11px] text-brand-600 dark:text-brand-400 hover:underline">View All</button>
           </div>
@@ -1078,7 +1199,6 @@
                 <div class="flex justify-between items-center">
                   <span class="text-[10px] font-bold font-mono px-2 py-0.5 rounded bg-brand-500/15 text-brand-600 dark:text-brand-300 uppercase">${f.type}</span>
                   <div class="flex items-center space-x-1">
-                    <button onclick="editFlight('${f.id}')" class="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"><i class="fa-solid fa-pen text-xs"></i></button>
                     <button onclick="deleteFlight('${f.id}')" class="p-1 text-slate-400 hover:text-rose-500"><i class="fa-solid fa-trash text-xs"></i></button>
                   </div>
                 </div>
@@ -1122,7 +1242,6 @@
                     <h3 class="text-sm font-bold text-slate-900 dark:text-white mt-1">${h.name}</h3>
                   </div>
                   <div class="flex items-center space-x-1">
-                    <button onclick="editHotel('${h.id}')" class="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"><i class="fa-solid fa-pen text-xs"></i></button>
                     <button onclick="deleteHotel('${h.id}')" class="p-1 text-slate-400 hover:text-rose-500"><i class="fa-solid fa-trash text-xs"></i></button>
                   </div>
                 </div>
@@ -1146,7 +1265,7 @@
           <div class="flex justify-between items-center">
             <div>
               <h2 class="text-sm font-bold text-slate-900 dark:text-white">Day-by-Day Schedule</h2>
-              <p class="text-[10px] text-slate-500">Interactive activities timeline</p>
+              <p class="text-[10px] text-slate-500">Orlando & New York Timeline</p>
             </div>
             <button onclick="openItineraryModal()" class="px-3 py-1 bg-brand-600 hover:bg-brand-500 text-white text-xs font-medium rounded-xl active:scale-95 transition flex items-center space-x-1">
               <i class="fa-solid fa-plus text-[10px]"></i>
@@ -1176,26 +1295,32 @@
     }
 
     function renderBudgetView() {
-      const totalSpent = tripData.expenses.reduce((sum, e) => sum + Number(e.amount || 0), 0);
-      const remaining = tripData.totalBudget - totalSpent;
+      const totalSpentSGD = tripData.expenses.reduce((sum, e) => sum + Number(e.amount || 0), 0);
+      const remainingSGD = tripData.totalBudget - totalSpentSGD;
+      const usdRate = exchangeRatesToUSD['SGD']; // 1 USD = 1.34 SGD
+      const totalSpentUSD = totalSpentSGD / usdRate;
 
       return `
         <div class="space-y-4">
           <!-- BUDGET SUMMARY CARD -->
           <div class="glass-card rounded-2xl p-4 border border-slate-200 dark:border-slate-800 space-y-3">
             <div class="flex justify-between items-center">
-              <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Travel Budget</span>
-              <span class="text-sm font-bold font-mono text-brand-600 dark:text-brand-300">$${tripData.totalBudget}</span>
+              <div>
+                <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Travel Budget</span>
+                <span class="text-[10px] text-slate-400 block">Home Currency: SGD</span>
+              </div>
+              <span class="text-sm font-bold font-mono text-brand-600 dark:text-brand-300">S$${tripData.totalBudget.toFixed(2)}</span>
             </div>
             
             <div class="grid grid-cols-2 gap-2 text-center py-2 bg-slate-100 dark:bg-slate-800/60 rounded-xl">
               <div>
-                <span class="text-[10px] text-slate-400 block font-medium">Spent so far</span>
-                <span class="text-base font-bold text-slate-900 dark:text-white font-mono">$${totalSpent.toFixed(2)}</span>
+                <span class="text-[10px] text-slate-400 block font-medium">Spent (SGD)</span>
+                <span class="text-base font-bold text-slate-900 dark:text-white font-mono">S$${totalSpentSGD.toFixed(2)}</span>
+                <span class="text-[9px] text-slate-400 block font-mono">≈ $${totalSpentUSD.toFixed(2)} USD</span>
               </div>
               <div>
-                <span class="text-[10px] text-slate-400 block font-medium">Remaining</span>
-                <span class="text-base font-bold ${remaining < 0 ? 'text-rose-500' : 'text-emerald-500'} font-mono">$${remaining.toFixed(2)}</span>
+                <span class="text-[10px] text-slate-400 block font-medium">Remaining (SGD)</span>
+                <span class="text-base font-bold ${remainingSGD < 0 ? 'text-rose-500' : 'text-emerald-500'} font-mono">S$${remainingSGD.toFixed(2)}</span>
               </div>
             </div>
           </div>
@@ -1223,7 +1348,10 @@
                     </div>
                   </div>
                   <div class="flex items-center space-x-2">
-                    <span class="text-xs font-bold font-mono text-slate-900 dark:text-white">$${Number(e.amount).toFixed(2)}</span>
+                    <div class="text-right">
+                      <span class="text-xs font-bold font-mono text-slate-900 dark:text-white block">S$${Number(e.amount).toFixed(2)}</span>
+                      <span class="text-[9px] font-mono text-slate-400 block">≈ $${(Number(e.amount) / usdRate).toFixed(2)} USD</span>
+                    </div>
                     <button onclick="deleteExpense('${e.id}')" class="text-slate-400 hover:text-rose-500 p-1">
                       <i class="fa-solid fa-trash text-xs"></i>
                     </button>
@@ -1244,7 +1372,7 @@
           <div class="flex justify-between items-center">
             <div>
               <h2 class="text-sm font-bold text-slate-900 dark:text-white">Checklists & Tasks</h2>
-              <p class="text-[10px] text-slate-500">Track preparation and packing</p>
+              <p class="text-[10px] text-slate-500">Track Orlando & NYC preparation</p>
             </div>
             <button onclick="openTodoModal()" class="px-3 py-1 bg-brand-600 hover:bg-brand-500 text-white text-xs font-medium rounded-xl active:scale-95 transition flex items-center space-x-1">
               <i class="fa-solid fa-plus text-[10px]"></i>
@@ -1278,15 +1406,210 @@
       `;
     }
 
+    function calculateCurrency() {
+      const amountInput = document.getElementById('calc-amount');
+      const fromSelect = document.getElementById('calc-from');
+      const toSelect = document.getElementById('calc-to');
+      const resultEl = document.getElementById('calc-result');
+      const rateLabelEl = document.getElementById('calc-rate-label');
+
+      if (!amountInput || !fromSelect || !toSelect || !resultEl) return;
+
+      const amount = parseFloat(amountInput.value) || 0;
+      const fromCurr = fromSelect.value;
+      const toCurr = toSelect.value;
+
+      // Rate in USD base
+      const fromRateUSD = exchangeRatesToUSD[fromCurr] || 1.0;
+      const toRateUSD = exchangeRatesToUSD[toCurr] || 1.0;
+
+      // Conversion logic: (Amount / FromRateInUSD) * ToRateInUSD
+      const amountInUSD = amount / fromRateUSD;
+      const converted = amountInUSD * toRateUSD;
+
+      const singleUnitConverted = (1 / fromRateUSD) * toRateUSD;
+
+      const symbols = {
+        SGD: 'S$', USD: '$', EUR: '€', GBP: '£', JPY: '¥', AUD: 'A$', CAD: 'C$', MYR: 'RM ', THB: '฿'
+      };
+
+      const symbol = symbols[toCurr] || '';
+      resultEl.innerText = `${symbol}${converted.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${toCurr}`;
+      if (rateLabelEl) {
+        rateLabelEl.innerText = `1 ${fromCurr} ≈ ${singleUnitConverted.toFixed(3)} ${toCurr}`;
+      }
+    }
+
+    function swapCurrencyPair() {
+      const fromSelect = document.getElementById('calc-from');
+      const toSelect = document.getElementById('calc-to');
+      if (!fromSelect || !toSelect) return;
+
+      const temp = fromSelect.value;
+      fromSelect.value = toSelect.value;
+      toSelect.value = temp;
+
+      calculateCurrency();
+      showToast("Currency pair swapped!");
+    }
+
+    function saveFlight(e) {
+      e.preventDefault();
+      const newFlight = {
+        id: 'f-' + Date.now(),
+        type: document.getElementById('flight-type').value,
+        airline: document.getElementById('flight-airline').value,
+        flightNum: document.getElementById('flight-num').value,
+        route: document.getElementById('flight-route').value,
+        dept: document.getElementById('flight-dept').value || 'TBD',
+        arr: document.getElementById('flight-arr').value || 'TBD',
+        pnr: document.getElementById('flight-pnr').value || 'N/A',
+        gate: document.getElementById('flight-gate').value || 'TBD'
+      };
+      tripData.flights.push(newFlight);
+      saveTripToVault();
+      closeFlightModal();
+      renderActiveTab();
+      showToast("Flight segment saved!");
+    }
+
+    function deleteFlight(id) {
+      tripData.flights = tripData.flights.filter(f => f.id !== id);
+      saveTripToVault();
+      renderActiveTab();
+      showToast("Flight removed");
+    }
+
+    function saveHotel(e) {
+      e.preventDefault();
+      const newHotel = {
+        id: 'h-' + Date.now(),
+        name: document.getElementById('hotel-name').value,
+        area: document.getElementById('hotel-area').value || 'General',
+        pnr: document.getElementById('hotel-pnr').value || 'N/A',
+        checkIn: document.getElementById('hotel-in').value || '3:00 PM',
+        checkOut: document.getElementById('hotel-out').value || '11:00 AM',
+        address: document.getElementById('hotel-address').value || ''
+      };
+      tripData.hotels.push(newHotel);
+      saveTripToVault();
+      closeHotelModal();
+      renderActiveTab();
+      showToast("Hotel booking saved!");
+    }
+
+    function deleteHotel(id) {
+      tripData.hotels = tripData.hotels.filter(h => h.id !== id);
+      saveTripToVault();
+      renderActiveTab();
+      showToast("Accommodation removed");
+    }
+
+    function saveItineraryItem(e) {
+      e.preventDefault();
+      const newItem = {
+        id: 'i-' + Date.now(),
+        day: document.getElementById('itin-day').value,
+        time: document.getElementById('itin-time').value,
+        title: document.getElementById('itin-title').value,
+        notes: document.getElementById('itin-notes').value || '',
+        done: false
+      };
+      tripData.itinerary.push(newItem);
+      saveTripToVault();
+      closeItineraryModal();
+      renderActiveTab();
+      showToast("Activity added!");
+    }
+
+    function toggleItinerary(id) {
+      const item = tripData.itinerary.find(i => i.id === id);
+      if (item) {
+        item.done = !item.done;
+        saveTripToVault();
+        renderActiveTab();
+      }
+    }
+
+    function deleteItinerary(id) {
+      tripData.itinerary = tripData.itinerary.filter(i => i.id !== id);
+      saveTripToVault();
+      renderActiveTab();
+      showToast("Event removed");
+    }
+
+    function saveTripOverview(e) {
+      e.preventDefault();
+      tripData.destination = document.getElementById('trip-dest-input').value;
+      tripData.dates = document.getElementById('trip-dates-input').value;
+      tripData.totalBudget = parseFloat(document.getElementById('trip-budget-input').value) || 8000;
+      saveTripToVault();
+      closeTripEditModal();
+      renderActiveTab();
+      showToast("Trip overview updated!");
+    }
+
+    function saveExpenseItem(e) {
+      e.preventDefault();
+      const newExp = {
+        id: 'e-' + Date.now(),
+        category: document.getElementById('exp-category').value,
+        title: document.getElementById('exp-title').value,
+        amount: parseFloat(document.getElementById('exp-amount').value) || 0,
+        date: document.getElementById('exp-date').value || 'Today'
+      };
+      tripData.expenses.push(newExp);
+      saveTripToVault();
+      closeExpenseModal();
+      renderActiveTab();
+      showToast("Expense recorded!");
+    }
+
+    function deleteExpense(id) {
+      tripData.expenses = tripData.expenses.filter(e => e.id !== id);
+      saveTripToVault();
+      renderActiveTab();
+      showToast("Expense deleted");
+    }
+
+    function saveTodoItem(e) {
+      e.preventDefault();
+      const newTodo = {
+        id: 't-' + Date.now(),
+        category: document.getElementById('todo-cat').value,
+        title: document.getElementById('todo-title').value,
+        done: false
+      };
+      tripData.todos.push(newTodo);
+      saveTripToVault();
+      closeTodoModal();
+      renderActiveTab();
+      showToast("Task added!");
+    }
+
+    function toggleTodo(id) {
+      const todo = tripData.todos.find(t => t.id === id);
+      if (todo) {
+        todo.done = !todo.done;
+        saveTripToVault();
+        renderActiveTab();
+      }
+    }
+
+    function deleteTodo(id) {
+      tripData.todos = tripData.todos.filter(t => t.id !== id);
+      saveTripToVault();
+      renderActiveTab();
+      showToast("Task deleted");
+    }
+
+    // Modal Control Helpers
     function openVaultModal() {
       document.getElementById('modal-vault-id').innerText = vaultId;
       document.getElementById('vault-input').value = vaultId;
       document.getElementById('vault-modal').classList.remove('hidden');
     }
-
-    function closeVaultModal() {
-      document.getElementById('vault-modal').classList.add('hidden');
-    }
+    function closeVaultModal() { document.getElementById('vault-modal').classList.add('hidden'); }
 
     function joinVault() {
       const code = document.getElementById('vault-input').value.trim().toUpperCase();
@@ -1294,7 +1617,16 @@
       vaultId = code;
       localStorage.setItem('zentravel_vault_id', vaultId);
       document.getElementById('header-vault-id').innerText = vaultId;
+      document.getElementById('modal-vault-id').innerText = vaultId;
       closeVaultModal();
+      
+      if (currentUser && !currentUser.isAnonymous) {
+        const userRef = getUserDocRef(currentUser.uid);
+        if (userRef) {
+          userRef.set({ activeVaultId: vaultId }, { merge: true }).catch(() => {});
+        }
+      }
+
       setupVaultSync();
       showToast(`Connected to Vault: ${vaultId}`);
     }
@@ -1321,144 +1653,22 @@
       document.getElementById('hud-vault-id').innerText = vaultId;
       document.getElementById('diagnostics-modal').classList.remove('hidden');
     }
+    function closeDiagnosticsModal() { document.getElementById('diagnostics-modal').classList.add('hidden'); }
 
-    function closeDiagnosticsModal() {
-      document.getElementById('diagnostics-modal').classList.add('hidden');
+    function openToolsModal() {
+      calculateCurrency();
+      document.getElementById('tools-modal').classList.remove('hidden');
     }
+    function closeToolsModal() { document.getElementById('tools-modal').classList.add('hidden'); }
 
-    // MODAL OPENERS / CLOSERS & SAVE HANDLERS
     function openFlightModal() { document.getElementById('flight-modal').classList.remove('hidden'); }
     function closeFlightModal() { document.getElementById('flight-modal').classList.add('hidden'); }
-    function saveFlight(e) {
-      e.preventDefault();
-      const newFlight = {
-        id: 'f-' + Date.now(),
-        type: document.getElementById('flight-type').value,
-        airline: document.getElementById('flight-airline').value,
-        flightNum: document.getElementById('flight-num').value,
-        route: document.getElementById('flight-route').value,
-        dept: document.getElementById('flight-dept').value,
-        arr: document.getElementById('flight-arr').value,
-        pnr: document.getElementById('flight-pnr').value || 'TBD',
-        gate: document.getElementById('flight-gate').value || 'TBD'
-      };
-      tripData.flights.push(newFlight);
-      saveTripToVault();
-      closeFlightModal();
-      renderActiveTab();
-      showToast("Flight segment saved!");
-    }
-    function deleteFlight(id) {
-      tripData.flights = tripData.flights.filter(f => f.id !== id);
-      saveTripToVault();
-      renderActiveTab();
-    }
 
     function openHotelModal() { document.getElementById('hotel-modal').classList.remove('hidden'); }
     function closeHotelModal() { document.getElementById('hotel-modal').classList.add('hidden'); }
-    function saveHotel(e) {
-      e.preventDefault();
-      const newHotel = {
-        id: 'h-' + Date.now(),
-        name: document.getElementById('hotel-name').value,
-        area: document.getElementById('hotel-area').value || 'City',
-        pnr: document.getElementById('hotel-pnr').value || 'N/A',
-        checkIn: document.getElementById('hotel-in').value,
-        checkOut: document.getElementById('hotel-out').value,
-        address: document.getElementById('hotel-address').value
-      };
-      tripData.hotels.push(newHotel);
-      saveTripToVault();
-      closeHotelModal();
-      renderActiveTab();
-      showToast("Hotel booking saved!");
-    }
-    function deleteHotel(id) {
-      tripData.hotels = tripData.hotels.filter(h => h.id !== id);
-      saveTripToVault();
-      renderActiveTab();
-    }
 
     function openItineraryModal() { document.getElementById('itinerary-modal').classList.remove('hidden'); }
     function closeItineraryModal() { document.getElementById('itinerary-modal').classList.add('hidden'); }
-    function saveItineraryItem(e) {
-      e.preventDefault();
-      const item = {
-        id: 'i-' + Date.now(),
-        day: document.getElementById('itin-day').value,
-        time: document.getElementById('itin-time').value,
-        title: document.getElementById('itin-title').value,
-        notes: document.getElementById('itin-notes').value,
-        done: false
-      };
-      tripData.itinerary.push(item);
-      saveTripToVault();
-      closeItineraryModal();
-      renderActiveTab();
-      showToast("Activity added!");
-    }
-    function toggleItinerary(id) {
-      const item = tripData.itinerary.find(i => i.id === id);
-      if (item) item.done = !item.done;
-      saveTripToVault();
-      renderActiveTab();
-    }
-    function deleteItinerary(id) {
-      tripData.itinerary = tripData.itinerary.filter(i => i.id !== id);
-      saveTripToVault();
-      renderActiveTab();
-    }
-
-    function openExpenseModal() { document.getElementById('expense-modal').classList.remove('hidden'); }
-    function closeExpenseModal() { document.getElementById('expense-modal').classList.add('hidden'); }
-    function saveExpenseItem(e) {
-      e.preventDefault();
-      const item = {
-        id: 'e-' + Date.now(),
-        category: document.getElementById('exp-category').value,
-        title: document.getElementById('exp-title').value,
-        amount: parseFloat(document.getElementById('exp-amount').value) || 0,
-        date: document.getElementById('exp-date').value || 'Today'
-      };
-      tripData.expenses.push(item);
-      saveTripToVault();
-      closeExpenseModal();
-      renderActiveTab();
-      showToast("Expense added!");
-    }
-    function deleteExpense(id) {
-      tripData.expenses = tripData.expenses.filter(e => e.id !== id);
-      saveTripToVault();
-      renderActiveTab();
-    }
-
-    function openTodoModal() { document.getElementById('todo-modal').classList.remove('hidden'); }
-    function closeTodoModal() { document.getElementById('todo-modal').classList.add('hidden'); }
-    function saveTodoItem(e) {
-      e.preventDefault();
-      const item = {
-        id: 't-' + Date.now(),
-        category: document.getElementById('todo-cat').value,
-        title: document.getElementById('todo-title').value,
-        done: false
-      };
-      tripData.todos.push(item);
-      saveTripToVault();
-      closeTodoModal();
-      renderActiveTab();
-      showToast("Task created!");
-    }
-    function toggleTodo(id) {
-      const item = tripData.todos.find(t => t.id === id);
-      if (item) item.done = !item.done;
-      saveTripToVault();
-      renderActiveTab();
-    }
-    function deleteTodo(id) {
-      tripData.todos = tripData.todos.filter(t => t.id !== id);
-      saveTripToVault();
-      renderActiveTab();
-    }
 
     function openTripEditModal() {
       document.getElementById('trip-dest-input').value = tripData.destination;
@@ -1467,57 +1677,68 @@
       document.getElementById('trip-edit-modal').classList.remove('hidden');
     }
     function closeTripEditModal() { document.getElementById('trip-edit-modal').classList.add('hidden'); }
-    function saveTripOverview(e) {
-      e.preventDefault();
-      tripData.destination = document.getElementById('trip-dest-input').value;
-      tripData.dates = document.getElementById('trip-dates-input').value;
-      tripData.totalBudget = parseFloat(document.getElementById('trip-budget-input').value) || 3500;
-      saveTripToVault();
-      closeTripEditModal();
-      renderActiveTab();
-      showToast("Trip overview updated!");
-    }
 
-    function openToolsModal() { document.getElementById('tools-modal').classList.remove('hidden'); }
-    function closeToolsModal() { document.getElementById('tools-modal').classList.add('hidden'); }
-    function calculateCurrency() {
-      const amt = parseFloat(document.getElementById('calc-amount').value) || 0;
-      const rates = { USD: 154, EUR: 168, GBP: 201, SGD: 118 };
-      const from = document.getElementById('calc-from').value;
-      const res = Math.round(amt * (rates[from] || 154));
-      document.getElementById('calc-result').innerText = `¥${res.toLocaleString()}`;
-    }
+    function openExpenseModal() { document.getElementById('expense-modal').classList.remove('hidden'); }
+    function closeExpenseModal() { document.getElementById('expense-modal').classList.add('hidden'); }
 
+    function openTodoModal() { document.getElementById('todo-modal').classList.remove('hidden'); }
+    function closeTodoModal() { document.getElementById('todo-modal').classList.add('hidden'); }
+
+    // Theme Toggle Logic
     function toggleTheme() {
       const html = document.documentElement;
-      const themeIcon = document.getElementById('theme-icon');
+      const icon = document.getElementById('theme-icon');
       if (html.classList.contains('dark')) {
         html.classList.remove('dark');
-        themeIcon.className = 'fa-solid fa-sun text-amber-500 text-xs';
+        icon.className = "fa-solid fa-sun text-xs text-amber-500";
+        localStorage.setItem('zentravel_theme', 'light');
       } else {
         html.classList.add('dark');
-        themeIcon.className = 'fa-solid fa-moon text-xs';
+        icon.className = "fa-solid fa-moon text-xs";
+        localStorage.setItem('zentravel_theme', 'dark');
       }
     }
 
+    // Custom Toast Notification System (Replaces Alert)
     function showToast(msg, type = 'success') {
       const container = document.getElementById('toast-container');
+      if (!container) return;
+
       const toast = document.createElement('div');
-      toast.className = `p-3 rounded-xl text-xs font-medium shadow-lg transition-all transform duration-200 pointer-events-auto flex items-center space-x-2 ${
-        type === 'error' ? 'bg-rose-600 text-white' : 'bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 border border-slate-700'
+      toast.className = `glass-card p-3 rounded-xl shadow-xl flex items-center space-x-2 text-xs font-medium border transition-all duration-300 transform translate-y-2 opacity-0 pointer-events-auto ${
+        type === 'error' ? 'border-rose-500/50 text-rose-600 dark:text-rose-400' : 'border-brand-500/50 text-slate-800 dark:text-slate-100'
       }`;
-      toast.innerHTML = `<i class="fa-solid ${type === 'error' ? 'fa-triangle-exclamation' : 'fa-circle-check'}"></i> <span>${msg}</span>`;
+
+      toast.innerHTML = `
+        <i class="${type === 'error' ? 'fa-solid fa-circle-exclamation text-rose-500' : 'fa-solid fa-circle-check text-emerald-500'}"></i>
+        <span class="flex-1">${msg}</span>
+      `;
+
       container.appendChild(toast);
+
+      requestAnimationFrame(() => {
+        toast.classList.remove('translate-y-2', 'opacity-0');
+      });
+
       setTimeout(() => {
-        toast.style.opacity = '0';
+        toast.classList.add('translate-y-2', 'opacity-0');
         setTimeout(() => toast.remove(), 300);
       }, 2500);
     }
 
-    // INITIALIZATION ENTRY POINT
+    // On Application Startup
     window.onload = function() {
-      document.getElementById('header-vault-id').innerText = vaultId;
+      const savedTheme = localStorage.getItem('zentravel_theme');
+      if (savedTheme === 'light') {
+        document.documentElement.classList.remove('dark');
+        const icon = document.getElementById('theme-icon');
+        if (icon) icon.className = "fa-solid fa-sun text-xs text-amber-500";
+      }
+
       loadFromLocalStorage();
+      document.getElementById('header-vault-id').innerText = vaultId;
+      document.getElementById('modal-vault-id').innerText = vaultId;
+
       initFirebase();
       renderActiveTab();
     };

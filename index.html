@@ -814,6 +814,29 @@
             });
         }
 
+        // Helper: Calculate date display for itinerary day tags (e.g. "Day 1 (Apr 1)")
+        function getDayDateLabel(dayStr, startDateStr) {
+            if (!startDateStr) return dayStr;
+            const match = dayStr ? dayStr.match(/Day\s*(\d+)/i) : null;
+            if (!match) return dayStr;
+            const dayNum = parseInt(match[1], 10);
+            if (isNaN(dayNum)) return dayStr;
+
+            // Handle date parsing with YYYY-MM-DD
+            const parts = startDateStr.split('-');
+            if (parts.length !== 3) return dayStr;
+            const year = parseInt(parts[0], 10);
+            const month = parseInt(parts[1], 10) - 1;
+            const day = parseInt(parts[2], 10);
+
+            const dt = new Date(year, month, day);
+            if (isNaN(dt.getTime())) return dayStr;
+
+            dt.setDate(dt.getDate() + (dayNum - 1));
+            const formattedDate = dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            return `${dayStr} (${formattedDate})`;
+        }
+
         // Attach Direct Real-Time Snapshot Listeners (Unchanged Listener Logic)
         function attachVaultListeners(vaultId) {
             unsubscribers.forEach(unsub => unsub && unsub());
@@ -955,12 +978,13 @@
             document.getElementById('counterPacking').innerText = `${pct}%`;
         }
 
-        // Render Itinerary Tab
+        // Render Itinerary Tab (ENHANCED: Tab & activity badges include exact dates)
         function renderItinerary() {
             const listContainer = document.getElementById('itineraryList');
             const dayContainer = document.getElementById('dayFilterContainer');
             listContainer.innerHTML = '';
 
+            const currentTrip = tripsData.find(t => t.id === activeTripId);
             const currentActivities = activitiesData.filter(a => a.tripId === activeTripId);
 
             // Day Filter Buttons
@@ -974,10 +998,16 @@
             allBtn.onclick = () => { activeDayFilter = 'ALL'; renderItinerary(); };
             dayContainer.appendChild(allBtn);
 
-            Array.from(daysSet).sort().slice(0, 7).forEach(day => {
+            const sortedDays = Array.from(daysSet).sort((a, b) => {
+                const numA = parseInt((a.match(/\d+/) || [0])[0], 10);
+                const numB = parseInt((b.match(/\d+/) || [0])[0], 10);
+                return numA - numB;
+            });
+
+            sortedDays.slice(0, 14).forEach(day => {
                 const btn = document.createElement('button');
                 btn.className = `day-filter-btn px-3 py-1 rounded-lg text-xs font-semibold transition ${activeDayFilter === day ? 'bg-brand-600 text-white' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}`;
-                btn.innerText = day;
+                btn.innerText = getDayDateLabel(day, currentTrip?.startDate);
                 btn.onclick = () => { activeDayFilter = day; renderItinerary(); };
                 dayContainer.appendChild(btn);
             });
@@ -994,11 +1024,12 @@
             }
 
             filtered.forEach(item => {
+                const dayLabel = getDayDateLabel(item.day, currentTrip?.startDate);
                 const card = document.createElement('div');
                 card.className = "p-3.5 bg-slate-900/80 hover:bg-slate-900 border border-slate-800 rounded-xl transition flex flex-col sm:flex-row sm:items-center justify-between gap-3";
                 card.innerHTML = `
                     <div class="flex items-start gap-3 min-w-0">
-                        <span class="px-2.5 py-1 rounded-lg bg-brand-500/10 text-brand-400 border border-brand-500/20 text-xs font-bold shrink-0">${item.day}</span>
+                        <span class="px-2.5 py-1 rounded-lg bg-brand-500/10 text-brand-400 border border-brand-500/20 text-xs font-bold shrink-0">${dayLabel}</span>
                         <div class="min-w-0">
                             <h4 class="font-bold text-sm text-white truncate">${item.title}</h4>
                             <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-400 mt-1">
@@ -1048,12 +1079,22 @@
             return legs;
         }
 
-        // Render Flights Tab (Enhanced Multi-Transfer Visual Renderer)
+        // Render Flights Tab (ENHANCED: Sorted by date in ascending order)
         function renderFlights() {
             const container = document.getElementById('flightsList');
             container.innerHTML = '';
 
-            const current = flightsData.filter(f => f.tripId === activeTripId);
+            let current = flightsData.filter(f => f.tripId === activeTripId);
+
+            // SORT FLIGHTS BY DATE ASCENDING
+            current.sort((a, b) => {
+                const legsA = getFlightLegsArray(a);
+                const legsB = getFlightLegsArray(b);
+                const dateA = new Date(a.dep || legsA[0]?.dep || 0).getTime();
+                const dateB = new Date(b.dep || legsB[0]?.dep || 0).getTime();
+                return dateA - dateB;
+            });
+
             if (current.length === 0) {
                 container.innerHTML = `
                     <div class="col-span-full p-8 text-center bg-slate-900/60 rounded-2xl border border-slate-800 text-slate-500 text-xs">
@@ -1077,7 +1118,6 @@
                 // Build legs breakdown HTML
                 let legsHtml = '';
                 legs.forEach((leg, idx) => {
-                    const isLast = idx === legs.length - 1;
 
                     // Layover Banner between transfers
                     if (idx > 0) {
@@ -1923,55 +1963,38 @@
                 // 4. Sample Activities
                 const activities = [
                     { day: 'Day 1', title: 'Arrival at Narita & Skyliner to Shinjuku', time: '09:30 AM', category: 'Transport', cost: 25.00, location: 'Narita Airport', notes: 'Pick up Suica Card and pocket WiFi at arrival hall.' },
-                    { day: 'Day 1', title: 'Shinjuku Gyoen National Garden Cherry Blossoms', time: '02:00 PM', category: 'Sightseeing', cost: 5.00, location: 'Shinjuku', notes: 'Best photo spot for early blooming Sakura.' },
-                    { day: 'Day 2', title: 'Senso-ji Temple & Asakusa Food Tour', time: '09:00 AM', category: 'Sightseeing', cost: 30.00, location: 'Asakusa', notes: 'Try fresh Melonpan and Dango along Nakamise Street.' },
-                    { day: 'Day 2', title: 'Shibuya Crossing & Dinner at Ichiran', time: '06:00 PM', category: 'Dining', cost: 20.00, location: 'Shibuya', notes: 'Pre-book ticket for Shibuya Sky rooftop observatory.' }
+                    { day: 'Day 1', title: 'Shinjuku Gyoen National Garden Cherry Blossoms', time: '02:00 PM', category: 'Sightseeing', cost: 5.00, location: 'Shinjuku', notes: 'Great spot for viewing cherry blossoms.' }
                 ];
 
                 for (const act of activities) {
                     await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'activities'), {
                         vaultId: activeVaultId,
                         tripId: tripId,
-                        ...act
+                        ...act,
+                        createdBy: currentUser ? currentUser.uid : 'anon',
+                        createdAt: new Date().toISOString()
                     });
                 }
 
-                // 5. Sample Packing Items
-                const packing = [
-                    { text: 'Passport & Japan Rail Pass Exchange Order', checked: true },
-                    { text: 'Universal Power Adapter & Power Bank', checked: false },
-                    { text: 'Comfortable Walking Shoes', checked: true },
-                    { text: 'Yen Cash (approx. 50,000 JPY)', checked: false }
-                ];
-
-                for (const pack of packing) {
-                    await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'packing'), {
-                        vaultId: activeVaultId,
-                        tripId: tripId,
-                        ...pack
-                    });
-                }
-
-                closeDiagnosticsModal();
-                showToast("Sample Japan itinerary loaded!");
+                showToast('Sample Japan trip data loaded!');
             } catch (err) {
-                showToast("Seeding error: " + err.message, 'error');
+                showToast('Seeding error: ' + err.message, 'error');
             }
         };
 
-        // Initialize Authentication & App Startup
+        // Firebase Auth Initialization
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 currentUser = user;
-                document.getElementById('diagAuthStatus').innerText = "Connected";
                 document.getElementById('diagUid').innerText = user.uid;
+                document.getElementById('diagAuthStatus').innerText = "Connected";
+                attachVaultListeners(activeVaultId);
             } else {
-                signInAnonymously(auth).catch(err => {
-                    console.warn("Auth error:", err);
+                signInAnonymously(auth).catch((err) => {
+                    console.warn("Auth failed, falling back to local storage:", err);
                     enableLocalFallbackMode();
                 });
             }
-            attachVaultListeners(activeVaultId);
         });
     </script>
 </body>

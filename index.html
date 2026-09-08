@@ -270,12 +270,12 @@
             </div>
         </section>
 
-        <!-- TAB CONTENT 2: FLIGHT RESERVATIONS (ENHANCED MULTI-TRANSFER) -->
+        <!-- TAB CONTENT 2: FLIGHT RESERVATIONS -->
         <section id="view-flights" class="tab-view hidden space-y-3">
             <div class="flex items-center justify-between gap-2">
                 <div>
                     <h3 class="text-base sm:text-lg font-bold text-white">Flight Bookings</h3>
-                    <p class="text-[11px] sm:text-xs text-slate-400">Manage direct flights and multi-transfer itineraries with layover durations</p>
+                    <p class="text-[11px] sm:text-xs text-slate-400">Manage airline tickets, departure times, PNR codes, and connecting layovers</p>
                 </div>
                 <button onclick="openFlightModal()" class="px-3.5 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-semibold text-xs sm:text-sm flex items-center gap-1.5 transition shadow-lg shadow-brand-600/20 shrink-0 active:scale-95">
                     <i class="fa-solid fa-plus"></i> <span>Add Flight</span>
@@ -507,46 +507,109 @@
         </div>
     </div>
 
-    <!-- ENHANCED FLIGHT MODAL (SUPPORTING MULTIPLE TRANSFERS & LEGS) -->
+    <!-- FLIGHT MODAL (ENHANCED WITH CONNECTING FLIGHT CAPTURE) -->
     <div id="flightModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-3 sm:p-4">
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-xl w-full p-5 sm:p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-5 sm:p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
             <button onclick="closeFlightModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-lg p-1">
                 <i class="fa-solid fa-xmark"></i>
             </button>
-            <h3 id="flightModalTitle" class="text-base sm:text-lg font-bold text-white mb-3">Add Flight Itinerary</h3>
+            <h3 id="flightModalTitle" class="text-base sm:text-lg font-bold text-white mb-4">Add Flight</h3>
 
-            <form onsubmit="handleFlightSubmit(event)" class="space-y-4">
+            <form onsubmit="handleFlightSubmit(event)" class="space-y-3">
                 <input type="hidden" id="flightFormId">
                 
-                <!-- TOP LEVEL SUMMARY INFO -->
-                <div class="grid grid-cols-2 gap-2.5">
-                    <div>
-                        <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">PNR / Booking Ref</label>
-                        <input type="text" id="flightFormPnr" placeholder="e.g. SQ782K" class="w-full px-3 py-2 rounded-xl border border-slate-700 bg-slate-950 text-slate-100 text-xs uppercase font-mono focus:border-brand-500">
+                <!-- Initial Leg Details -->
+                <div class="p-3 bg-slate-950/40 rounded-xl border border-slate-800/80 space-y-3">
+                    <span class="text-[10px] font-bold uppercase tracking-wider text-brand-400 flex items-center gap-1">
+                        <i class="fa-solid fa-plane-departure text-xs"></i> Leg 1 / Primary Flight Details
+                    </span>
+                    <div class="grid grid-cols-2 gap-2.5">
+                        <div>
+                            <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Airline</label>
+                            <input type="text" id="flightFormAirline" placeholder="e.g. Singapore Airlines" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-700 bg-slate-950 text-slate-100 text-xs focus:border-brand-500">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Flight Number</label>
+                            <input type="text" id="flightFormNum" placeholder="e.g. SQ 638" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-700 bg-slate-950 text-slate-100 text-xs focus:border-brand-500">
+                        </div>
                     </div>
-                    <div>
-                        <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Total Cost (SGD S$)</label>
-                        <input type="number" step="0.01" id="flightFormCost" placeholder="0.00" class="w-full px-3 py-2 rounded-xl border border-slate-700 bg-slate-950 text-slate-100 text-xs focus:border-brand-500">
+
+                    <div class="grid grid-cols-2 gap-2.5">
+                        <div>
+                            <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Departure Time</label>
+                            <input type="datetime-local" id="flightFormDep" step="60" required class="w-full px-3 py-2.5 rounded-xl border border-slate-700 bg-slate-950 text-slate-100 text-xs focus:border-brand-500">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Arrival Time</label>
+                            <input type="datetime-local" id="flightFormArr" step="60" required class="w-full px-3 py-2.5 rounded-xl border border-slate-700 bg-slate-950 text-slate-100 text-xs focus:border-brand-500">
+                        </div>
                     </div>
                 </div>
 
-                <!-- DYNAMIC FLIGHT LEGS CONTAINER -->
-                <div class="space-y-3">
-                    <div class="flex items-center justify-between border-b border-slate-800 pb-2">
-                        <span class="text-xs font-bold uppercase tracking-wider text-brand-400 flex items-center gap-1.5">
-                            <i class="fa-solid fa-route text-xs"></i> Flight Legs & Transfers
+                <!-- CONNECTING FLIGHT TOGGLE & DETAILS SECTION -->
+                <div class="border-t border-slate-800 pt-2 space-y-2">
+                    <div class="flex items-center justify-between p-2 rounded-xl bg-slate-950 border border-slate-800">
+                        <label class="flex items-center gap-2 cursor-pointer select-none">
+                            <input type="checkbox" id="flightFormHasConnecting" onchange="toggleConnectingFlightFields(this.checked)" class="w-4 h-4 rounded border-slate-700 text-brand-500 focus:ring-brand-500 bg-slate-950 cursor-pointer">
+                            <span class="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+                                <i class="fa-solid fa-code-branch text-brand-400 text-xs"></i> Connecting Flight / Layover
+                            </span>
+                        </label>
+                        <span class="text-[10px] text-slate-400">Add 2nd Leg Details</span>
+                    </div>
+
+                    <div id="connectingFlightContainer" class="hidden space-y-3 p-3 bg-slate-950/60 rounded-xl border border-brand-500/20">
+                        <span class="text-[10px] font-bold uppercase tracking-wider text-amber-400 flex items-center gap-1">
+                            <i class="fa-solid fa-clock-rotate-left text-xs"></i> Leg 2 / Layover & Connecting Details
                         </span>
-                        <button type="button" onclick="addFlightLegFormGroup()" class="px-2.5 py-1 rounded-lg bg-brand-500/20 hover:bg-brand-500/30 text-brand-300 border border-brand-500/30 text-[11px] font-semibold flex items-center gap-1 transition">
-                            <i class="fa-solid fa-plus text-[10px]"></i> Add Leg / Transfer
-                        </button>
-                    </div>
 
-                    <div id="flightLegsContainer" class="space-y-3">
-                        <!-- Dynamic Leg cards injected via JS -->
+                        <div class="grid grid-cols-2 gap-2.5">
+                            <div>
+                                <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Layover Airport / City</label>
+                                <input type="text" id="flightFormLayover" placeholder="e.g. Haneda (HND)" class="w-full px-3 py-2 rounded-xl border border-slate-700 bg-slate-950 text-slate-100 text-xs focus:border-brand-500">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Layover Duration</label>
+                                <input type="text" id="flightFormLayoverDuration" placeholder="e.g. 2h 15m" class="w-full px-3 py-2 rounded-xl border border-slate-700 bg-slate-950 text-slate-100 text-xs focus:border-brand-500">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-2.5">
+                            <div>
+                                <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Connecting Airline</label>
+                                <input type="text" id="flightFormConnAirline" placeholder="e.g. All Nippon Airways" class="w-full px-3 py-2 rounded-xl border border-slate-700 bg-slate-950 text-slate-100 text-xs focus:border-brand-500">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Connecting Flight No.</label>
+                                <input type="text" id="flightFormConnNum" placeholder="e.g. NH 842" class="w-full px-3 py-2 rounded-xl border border-slate-700 bg-slate-950 text-slate-100 text-xs focus:border-brand-500">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-2.5">
+                            <div>
+                                <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Connecting Departure</label>
+                                <input type="datetime-local" id="flightFormConnDep" step="60" class="w-full px-3 py-2 rounded-xl border border-slate-700 bg-slate-950 text-slate-100 text-xs focus:border-brand-500">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Final Arrival</label>
+                                <input type="datetime-local" id="flightFormConnArr" step="60" class="w-full px-3 py-2 rounded-xl border border-slate-700 bg-slate-950 text-slate-100 text-xs focus:border-brand-500">
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                <div class="flex justify-end gap-2 pt-2 border-t border-slate-800">
+                <div class="grid grid-cols-2 gap-2.5 pt-1">
+                    <div>
+                        <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">PNR / Conf Key</label>
+                        <input type="text" id="flightFormPnr" placeholder="e.g. SQ782K" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-700 bg-slate-950 text-slate-100 text-xs uppercase font-mono focus:border-brand-500">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Ticket Cost (SGD S$)</label>
+                        <input type="number" step="0.01" id="flightFormCost" placeholder="0.00" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-700 bg-slate-950 text-slate-100 text-xs focus:border-brand-500">
+                    </div>
+                </div>
+
+                <div class="flex justify-end gap-2 pt-2">
                     <button type="button" onclick="closeFlightModal()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold">Cancel</button>
                     <button type="submit" class="px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-xs font-semibold transition shadow-lg shadow-brand-600/20 active:scale-95">Save Flight</button>
                 </div>
@@ -1018,37 +1081,7 @@
             });
         }
 
-        // Helper: Convert legacy flight schema to legs array seamlessly
-        function getFlightLegsArray(f) {
-            if (f.legs && Array.isArray(f.legs) && f.legs.length > 0) {
-                return f.legs;
-            }
-            // Backward compatibility conversion for legacy records
-            const legs = [{
-                airline: f.airline || '',
-                flightNum: f.flightNum || '',
-                fromAirport: f.fromAirport || '',
-                toAirport: f.toAirport || (f.hasConnecting ? f.layoverAirport : ''),
-                dep: f.dep || '',
-                arr: f.arr || ''
-            }];
-
-            if (f.hasConnecting) {
-                legs.push({
-                    airline: f.connAirline || f.airline || '',
-                    flightNum: f.connFlightNum || '',
-                    fromAirport: f.layoverAirport || '',
-                    toAirport: f.toAirport || '',
-                    dep: f.connDep || '',
-                    arr: f.connArr || '',
-                    layoverAirport: f.layoverAirport || '',
-                    layoverDuration: f.layoverDuration || ''
-                });
-            }
-            return legs;
-        }
-
-        // Render Flights Tab (Enhanced Multi-Transfer Visual Renderer)
+        // Render Flights Tab (Enhanced to display connecting flight details)
         function renderFlights() {
             const container = document.getElementById('flightsList');
             container.innerHTML = '';
@@ -1064,88 +1097,72 @@
             }
 
             current.forEach(f => {
-                const legs = getFlightLegsArray(f);
-                const transfersCount = legs.length - 1;
-
-                const stopsBadge = transfersCount <= 0 
-                    ? '<span class="text-[9px] uppercase px-1.5 py-0.5 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded font-bold">Direct</span>'
-                    : `<span class="text-[9px] uppercase px-1.5 py-0.5 bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded font-bold">${transfersCount} Transfer${transfersCount > 1 ? 's' : ''}</span>`;
-
                 const card = document.createElement('div');
-                card.className = "p-4 bg-slate-900/80 border border-slate-800 rounded-2xl space-y-3 relative flex flex-col justify-between";
+                card.className = "p-4 bg-slate-900/80 border border-slate-800 rounded-2xl space-y-3 relative";
 
-                // Build legs breakdown HTML
-                let legsHtml = '';
-                legs.forEach((leg, idx) => {
-                    const isLast = idx === legs.length - 1;
+                // If connecting flight exists
+                const hasConn = f.hasConnecting;
+                const layoverBadge = hasConn ? `
+                    <div class="my-2 p-2 bg-slate-950/80 rounded-xl border border-brand-500/30 flex items-center justify-between text-xs">
+                        <div class="flex items-center gap-1.5 text-amber-400 font-semibold">
+                            <i class="fa-solid fa-clock-rotate-left"></i>
+                            <span>Layover: <strong class="text-white">${f.layoverAirport || 'Transfer Airport'}</strong> ${f.layoverDuration ? `(${f.layoverDuration})` : ''}</span>
+                        </div>
+                        <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-brand-500/20 text-brand-300 font-bold border border-brand-500/30">
+                            Connecting Leg
+                        </span>
+                    </div>
+                ` : '';
 
-                    // Layover Banner between transfers
-                    if (idx > 0) {
-                        const transferPoint = leg.layoverAirport || leg.fromAirport || 'Transfer Airport';
-                        const dur = leg.layoverDuration ? `(${leg.layoverDuration})` : '';
-                        legsHtml += `
-                            <div class="my-1.5 p-2 bg-slate-950/90 rounded-xl border border-brand-500/30 flex items-center justify-between text-xs">
-                                <div class="flex items-center gap-1.5 text-amber-400 font-semibold text-[11px]">
-                                    <i class="fa-solid fa-clock-rotate-left"></i>
-                                    <span>Layover #${idx}: <strong class="text-white">${transferPoint}</strong> ${dur}</span>
-                                </div>
-                                <span class="text-[9px] uppercase font-mono px-1.5 py-0.5 rounded bg-brand-500/20 text-brand-300 font-bold border border-brand-500/30">
-                                    Transfer
-                                </span>
+                const connectingLegHtml = hasConn ? `
+                    <div class="p-2.5 bg-slate-950/50 rounded-xl border border-slate-800/80 space-y-1.5">
+                        <div class="flex items-center justify-between">
+                            <span class="font-bold text-slate-300 text-xs flex items-center gap-1">
+                                <i class="fa-solid fa-plane-arrival text-brand-400 text-xs"></i> 2nd Leg: ${f.connAirline || f.airline}
+                            </span>
+                            <span class="px-2 py-0.5 rounded bg-slate-800 text-slate-300 font-mono text-[11px] font-bold">${f.connFlightNum || 'Leg 2'}</span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2 text-xs text-slate-400">
+                            <div>
+                                <span class="text-[10px] text-slate-500 uppercase font-bold block">Connecting Dep</span>
+                                <span class="font-semibold text-slate-300">${formatDateTime(f.connDep)}</span>
                             </div>
-                        `;
-                    }
-
-                    legsHtml += `
-                        <div class="p-2.5 bg-slate-950/50 rounded-xl border border-slate-800/80 space-y-1.5">
-                            <div class="flex items-center justify-between">
-                                <span class="font-bold text-slate-200 text-xs flex items-center gap-1.5">
-                                    <i class="fa-solid fa-plane text-brand-400 text-xs"></i> 
-                                    Leg ${idx + 1}: ${leg.airline || 'Airline'}
-                                </span>
-                                <span class="px-2 py-0.5 rounded bg-slate-800 text-slate-300 font-mono text-[11px] font-bold">${leg.flightNum || 'N/A'}</span>
-                            </div>
-                            
-                            ${(leg.fromAirport || leg.toAirport) ? `
-                                <div class="text-[11px] font-semibold text-brand-300 flex items-center gap-1.5 pt-0.5">
-                                    <span>${leg.fromAirport || 'DEP'}</span>
-                                    <i class="fa-solid fa-arrow-right-long text-[10px] text-slate-500"></i>
-                                    <span>${leg.toAirport || 'ARR'}</span>
-                                </div>
-                            ` : ''}
-
-                            <div class="grid grid-cols-2 gap-2 text-xs text-slate-400 pt-0.5">
-                                <div>
-                                    <span class="text-[9px] text-slate-500 uppercase font-bold block">Depart</span>
-                                    <span class="font-semibold text-slate-200 text-[11px]">${formatDateTime(leg.dep)}</span>
-                                </div>
-                                <div>
-                                    <span class="text-[9px] text-slate-500 uppercase font-bold block">Arrive</span>
-                                    <span class="font-semibold text-slate-200 text-[11px]">${formatDateTime(leg.arr)}</span>
-                                </div>
+                            <div>
+                                <span class="text-[10px] text-slate-500 uppercase font-bold block">Final Arrival</span>
+                                <span class="font-semibold text-slate-300">${formatDateTime(f.connArr)}</span>
                             </div>
                         </div>
-                    `;
-                });
+                    </div>
+                ` : '';
 
                 card.innerHTML = `
-                    <div class="space-y-3">
-                        <div class="flex items-center justify-between pr-14">
-                            <div class="flex items-center gap-2">
-                                <span class="font-extrabold text-white text-sm">
-                                    ${legs[0]?.airline || f.airline || 'Flight Booking'}
-                                </span>
-                                ${stopsBadge}
-                            </div>
-                        </div>
+                    <div class="flex items-center justify-between pr-14">
+                        <span class="font-extrabold text-brand-400 text-sm flex items-center gap-1.5">
+                            <i class="fa-solid fa-plane"></i> ${f.airline}
+                            ${hasConn ? '<span class="text-[9px] uppercase px-1.5 py-0.5 bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded font-bold">1 Stop</span>' : '<span class="text-[9px] uppercase px-1.5 py-0.5 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded font-bold">Direct</span>'}
+                        </span>
+                        <span class="px-2 py-0.5 rounded bg-slate-800 text-slate-300 font-mono text-xs font-bold">${f.flightNum}</span>
+                    </div>
 
-                        <!-- Render All Legs & Layovers -->
-                        <div class="space-y-2">
-                            ${legsHtml}
+                    <!-- Leg 1 -->
+                    <div class="grid grid-cols-2 gap-2 text-xs pt-1 border-t border-slate-800/80">
+                        <div>
+                            <span class="text-[10px] text-slate-500 uppercase font-bold block">${hasConn ? 'Initial Dep' : 'Depart'}</span>
+                            <span class="font-semibold text-slate-200">${formatDateTime(f.dep)}</span>
+                        </div>
+                        <div>
+                            <span class="text-[10px] text-slate-500 uppercase font-bold block">${hasConn ? 'Layover Touchdown' : 'Arrive'}</span>
+                            <span class="font-semibold text-slate-200">${formatDateTime(f.arr)}</span>
                         </div>
                     </div>
 
-                    <div class="flex items-center justify-between pt-2.5 text-xs text-slate-400 border-t border-slate-800/80 mt-2">
+                    <!-- Layover Info -->
+                    ${layoverBadge}
+
+                    <!-- Leg 2 -->
+                    ${connectingLegHtml}
+
+                    <div class="flex items-center justify-between pt-2 text-xs text-slate-400 border-t border-slate-800/80">
                         <span>PNR: <code class="text-brand-400 font-mono font-bold">${f.pnr || 'N/A'}</code></span>
                         <span class="font-bold text-emerald-400">${f.cost ? formatCurrency(f.cost) : 'S$0.00'}</span>
                     </div>
@@ -1476,102 +1493,38 @@
             }
         };
 
-        // DYNAMIC MULTI-LEG FLIGHT FORM BUILDER HELPERS
-        window.addFlightLegFormGroup = function(legData = null) {
-            const container = document.getElementById('flightLegsContainer');
-            const legIndex = container.children.length;
-            const legNum = legIndex + 1;
-
-            const div = document.createElement('div');
-            div.className = "flight-leg-card p-3.5 bg-slate-950/80 rounded-xl border border-slate-800/90 space-y-3 relative";
-            div.dataset.legIndex = legIndex;
-
-            const isTransfer = legIndex > 0;
-
-            div.innerHTML = `
-                <div class="flex items-center justify-between pb-1 border-b border-slate-800">
-                    <span class="text-xs font-bold text-brand-300 flex items-center gap-1.5">
-                        <i class="fa-solid ${isTransfer ? 'fa-plane-circle-check text-amber-400' : 'fa-plane-departure text-brand-400'}"></i>
-                        ${isTransfer ? `Leg ${legNum} / Transfer Segment` : `Leg 1 / Departure Flight`}
-                    </span>
-                    ${legIndex > 0 ? `
-                        <button type="button" onclick="removeFlightLegFormGroup(this)" class="text-xs text-red-400 hover:text-red-300 p-1 flex items-center gap-1 transition">
-                            <i class="fa-solid fa-trash-can"></i> Remove
-                        </button>
-                    ` : ''}
-                </div>
-
-                ${isTransfer ? `
-                    <div class="p-2.5 bg-amber-500/10 rounded-lg border border-amber-500/20 grid grid-cols-2 gap-2">
-                        <div>
-                            <label class="block text-[9px] font-bold uppercase text-amber-300 mb-0.5">Transfer Airport / City</label>
-                            <input type="text" class="leg-layover-airport w-full px-2.5 py-1.5 rounded-lg border border-slate-700 bg-slate-950 text-slate-100 text-xs focus:border-amber-400" placeholder="e.g. BKK / Bangkok" value="${legData?.layoverAirport || legData?.fromAirport || ''}">
-                        </div>
-                        <div>
-                            <label class="block text-[9px] font-bold uppercase text-amber-300 mb-0.5">Layover Duration</label>
-                            <input type="text" class="leg-layover-duration w-full px-2.5 py-1.5 rounded-lg border border-slate-700 bg-slate-950 text-slate-100 text-xs focus:border-amber-400" placeholder="e.g. 2h 45m" value="${legData?.layoverDuration || ''}">
-                        </div>
-                    </div>
-                ` : ''}
-
-                <div class="grid grid-cols-2 gap-2.5">
-                    <div>
-                        <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Airline</label>
-                        <input type="text" class="leg-airline w-full px-3 py-2 rounded-xl border border-slate-700 bg-slate-950 text-slate-100 text-xs focus:border-brand-500" placeholder="e.g. Singapore Airlines" required value="${legData?.airline || ''}">
-                    </div>
-                    <div>
-                        <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Flight Number</label>
-                        <input type="text" class="leg-flight-num w-full px-3 py-2 rounded-xl border border-slate-700 bg-slate-950 text-slate-100 text-xs focus:border-brand-500" placeholder="e.g. SQ 638" required value="${legData?.flightNum || ''}">
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-2 gap-2.5">
-                    <div>
-                        <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Origin Airport / Code</label>
-                        <input type="text" class="leg-from-airport w-full px-3 py-2 rounded-xl border border-slate-700 bg-slate-950 text-slate-100 text-xs focus:border-brand-500" placeholder="e.g. SIN" value="${legData?.fromAirport || ''}">
-                    </div>
-                    <div>
-                        <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Destination Airport / Code</label>
-                        <input type="text" class="leg-to-airport w-full px-3 py-2 rounded-xl border border-slate-700 bg-slate-950 text-slate-100 text-xs focus:border-brand-500" placeholder="e.g. NRT" value="${legData?.toAirport || ''}">
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-2 gap-2.5">
-                    <div>
-                        <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Departure Time</label>
-                        <input type="datetime-local" class="leg-dep w-full px-2.5 py-2 rounded-xl border border-slate-700 bg-slate-950 text-slate-100 text-xs focus:border-brand-500" step="60" required value="${toDateTimeLocalString(legData?.dep)}">
-                    </div>
-                    <div>
-                        <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Arrival Time</label>
-                        <input type="datetime-local" class="leg-arr w-full px-2.5 py-2 rounded-xl border border-slate-700 bg-slate-950 text-slate-100 text-xs focus:border-brand-500" step="60" required value="${toDateTimeLocalString(legData?.arr)}">
-                    </div>
-                </div>
-            `;
-
-            container.appendChild(div);
-        };
-
-        window.removeFlightLegFormGroup = function(btn) {
-            const card = btn.closest('.flight-leg-card');
-            if (card) {
-                card.remove();
+        // Flight Connecting Form Field Toggle Helper
+        window.toggleConnectingFlightFields = function(checked) {
+            const container = document.getElementById('connectingFlightContainer');
+            if (checked) {
+                container.classList.remove('hidden');
+            } else {
+                container.classList.add('hidden');
             }
         };
 
-        // Flight CRUD Handlers (Multi-Transfer Enhanced)
+        // Flight CRUD Handlers (Enhanced for Connecting Flights)
         window.openFlightModal = function() {
             if (!activeTripId) { showToast('Please select or create a trip first.', 'error'); return; }
             document.getElementById('flightFormId').value = '';
+            document.getElementById('flightFormAirline').value = '';
+            document.getElementById('flightFormNum').value = '';
+            document.getElementById('flightFormDep').value = '';
+            document.getElementById('flightFormArr').value = '';
             document.getElementById('flightFormPnr').value = '';
             document.getElementById('flightFormCost').value = '';
 
-            const container = document.getElementById('flightLegsContainer');
-            container.innerHTML = '';
-            
-            // Default 1 Leg
-            addFlightLegFormGroup();
+            // Reset connecting flight fields
+            document.getElementById('flightFormHasConnecting').checked = false;
+            document.getElementById('flightFormLayover').value = '';
+            document.getElementById('flightFormLayoverDuration').value = '';
+            document.getElementById('flightFormConnAirline').value = '';
+            document.getElementById('flightFormConnNum').value = '';
+            document.getElementById('flightFormConnDep').value = '';
+            document.getElementById('flightFormConnArr').value = '';
+            toggleConnectingFlightFields(false);
 
-            document.getElementById('flightModalTitle').innerText = "Add Flight Itinerary";
+            document.getElementById('flightModalTitle').innerText = "Add Flight";
             document.getElementById('flightModal').classList.remove('hidden');
         };
 
@@ -1580,18 +1533,25 @@
             if (!item) return;
 
             document.getElementById('flightFormId').value = item.id;
+            document.getElementById('flightFormAirline').value = item.airline || '';
+            document.getElementById('flightFormNum').value = item.flightNum || '';
+            document.getElementById('flightFormDep').value = toDateTimeLocalString(item.dep);
+            document.getElementById('flightFormArr').value = toDateTimeLocalString(item.arr);
             document.getElementById('flightFormPnr').value = item.pnr || '';
             document.getElementById('flightFormCost').value = item.cost || '';
 
-            const container = document.getElementById('flightLegsContainer');
-            container.innerHTML = '';
+            // Populate connecting flight details
+            const hasConn = !!item.hasConnecting;
+            document.getElementById('flightFormHasConnecting').checked = hasConn;
+            document.getElementById('flightFormLayover').value = item.layoverAirport || '';
+            document.getElementById('flightFormLayoverDuration').value = item.layoverDuration || '';
+            document.getElementById('flightFormConnAirline').value = item.connAirline || '';
+            document.getElementById('flightFormConnNum').value = item.connFlightNum || '';
+            document.getElementById('flightFormConnDep').value = toDateTimeLocalString(item.connDep);
+            document.getElementById('flightFormConnArr').value = toDateTimeLocalString(item.connArr);
+            toggleConnectingFlightFields(hasConn);
 
-            const legs = getFlightLegsArray(item);
-            legs.forEach(leg => {
-                addFlightLegFormGroup(leg);
-            });
-
-            document.getElementById('flightModalTitle').innerText = "Edit Flight Itinerary";
+            document.getElementById('flightModalTitle').innerText = "Edit Flight";
             document.getElementById('flightModal').classList.remove('hidden');
         };
 
@@ -1602,62 +1562,36 @@
         window.handleFlightSubmit = async function(e) {
             e.preventDefault();
             const id = document.getElementById('flightFormId').value;
-
-            // Extract legs from dynamic form groups
-            const legCards = document.querySelectorAll('#flightLegsContainer .flight-leg-card');
-            const legs = [];
-
-            legCards.forEach((card, index) => {
-                const airline = card.querySelector('.leg-airline')?.value.trim() || '';
-                const flightNum = card.querySelector('.leg-flight-num')?.value.trim() || '';
-                const fromAirport = card.querySelector('.leg-from-airport')?.value.trim() || '';
-                const toAirport = card.querySelector('.leg-to-airport')?.value.trim() || '';
-                const dep = toDateTimeLocalString(card.querySelector('.leg-dep')?.value);
-                const arr = toDateTimeLocalString(card.querySelector('.leg-arr')?.value);
-
-                const legObj = { airline, flightNum, fromAirport, toAirport, dep, arr };
-
-                if (index > 0) {
-                    legObj.layoverAirport = card.querySelector('.leg-layover-airport')?.value.trim() || '';
-                    legObj.layoverDuration = card.querySelector('.leg-layover-duration')?.value.trim() || '';
-                }
-
-                legs.push(legObj);
-            });
-
-            if (legs.length === 0) {
-                showToast('Please add at least one flight leg.', 'error');
-                return;
-            }
-
-            const primaryLeg = legs[0];
-            const finalLeg = legs[legs.length - 1];
+            const hasConn = document.getElementById('flightFormHasConnecting').checked;
 
             const payload = {
                 vaultId: activeVaultId,
                 tripId: activeTripId,
-                // Top level fields for backward compatibility / summary counters
-                airline: primaryLeg.airline,
-                flightNum: primaryLeg.flightNum,
-                dep: primaryLeg.dep,
-                arr: finalLeg.arr,
+                airline: document.getElementById('flightFormAirline').value.trim(),
+                flightNum: document.getElementById('flightFormNum').value.trim(),
+                dep: toDateTimeLocalString(document.getElementById('flightFormDep').value),
+                arr: toDateTimeLocalString(document.getElementById('flightFormArr').value),
                 pnr: document.getElementById('flightFormPnr').value.trim(),
                 cost: parseFloat(document.getElementById('flightFormCost').value) || 0,
-                // Multi-transfer dynamic legs array
-                hasConnecting: legs.length > 1,
-                legs: legs,
+                hasConnecting: hasConn,
+                layoverAirport: hasConn ? document.getElementById('flightFormLayover').value.trim() : '',
+                layoverDuration: hasConn ? document.getElementById('flightFormLayoverDuration').value.trim() : '',
+                connAirline: hasConn ? document.getElementById('flightFormConnAirline').value.trim() : '',
+                connFlightNum: hasConn ? document.getElementById('flightFormConnNum').value.trim() : '',
+                connDep: hasConn ? toDateTimeLocalString(document.getElementById('flightFormConnDep').value) : '',
+                connArr: hasConn ? toDateTimeLocalString(document.getElementById('flightFormConnArr').value) : '',
                 updatedAt: new Date().toISOString()
             };
 
             try {
                 if (id) {
                     await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'flights', id), payload);
-                    showToast('Flight itinerary updated!');
+                    showToast('Flight updated!');
                 } else {
                     payload.createdBy = currentUser ? currentUser.uid : 'anon';
                     payload.createdAt = new Date().toISOString();
                     await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'flights'), payload);
-                    showToast('Flight itinerary saved!');
+                    showToast('Flight saved!');
                 }
                 closeFlightModal();
             } catch (err) {
@@ -1866,47 +1800,23 @@
                 activeTripId = tripId;
                 localStorage.setItem('zentravel_active_trip_id', activeTripId);
 
-                // 2. Sample Multi-Leg Flight (2 Transfers example)
+                // 2. Sample Flights (Includes sample connecting flight)
                 await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'flights'), {
                     vaultId: activeVaultId,
                     tripId: tripId,
                     airline: "Singapore Airlines",
                     flightNum: "SQ 638",
                     dep: "2026-04-01T23:55",
-                    arr: "2026-04-02T13:45",
+                    arr: "2026-04-02T06:30",
                     pnr: "SQ782K",
-                    cost: 920.00,
+                    cost: 850.00,
                     hasConnecting: true,
-                    legs: [
-                        {
-                            airline: "Singapore Airlines",
-                            flightNum: "SQ 638",
-                            fromAirport: "SIN (Singapore)",
-                            toAirport: "BKK (Bangkok)",
-                            dep: "2026-04-01T23:55",
-                            arr: "2026-04-02T01:25"
-                        },
-                        {
-                            airline: "Thai Airways",
-                            flightNum: "TG 660",
-                            fromAirport: "BKK (Bangkok)",
-                            toAirport: "HND (Tokyo)",
-                            dep: "2026-04-02T04:15",
-                            arr: "2026-04-02T12:00",
-                            layoverAirport: "Suvarnabhumi Airport (BKK)",
-                            layoverDuration: "2h 50m"
-                        },
-                        {
-                            airline: "ANA",
-                            flightNum: "NH 381",
-                            fromAirport: "HND (Tokyo)",
-                            toAirport: "KIX (Osaka)",
-                            dep: "2026-04-02T14:30",
-                            arr: "2026-04-02T15:45",
-                            layoverAirport: "Haneda Airport (HND)",
-                            layoverDuration: "2h 30m"
-                        }
-                    ]
+                    layoverAirport: "Haneda Airport (HND)",
+                    layoverDuration: "2h 15m",
+                    connAirline: "All Nippon Airways",
+                    connFlightNum: "NH 842",
+                    connDep: "2026-04-02T08:45",
+                    connArr: "2026-04-02T10:00"
                 });
 
                 // 3. Sample Lodging
@@ -1965,14 +1875,17 @@
                 currentUser = user;
                 document.getElementById('diagAuthStatus').innerText = "Connected";
                 document.getElementById('diagUid').innerText = user.uid;
+                attachVaultListeners(activeVaultId);
             } else {
+                document.getElementById('diagAuthStatus').innerText = "Authenticating...";
                 signInAnonymously(auth).catch(err => {
-                    console.warn("Auth error:", err);
+                    console.warn("Auth failed, enabling local storage mode:", err);
+                    document.getElementById('diagAuthStatus').innerText = "Local Mode";
                     enableLocalFallbackMode();
                 });
             }
-            attachVaultListeners(activeVaultId);
         });
+
     </script>
 </body>
 </html>

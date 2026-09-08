@@ -665,6 +665,7 @@
             where,
             onSnapshot, 
             getDoc,
+            getDocsFromServer,
             setDoc, 
             deleteDoc,
             serverTimestamp
@@ -782,9 +783,10 @@
                 window.ZenApp.app = initializeApp(firebaseConfig);
                 window.ZenApp.auth = getAuth(window.ZenApp.app);
                 window.ZenApp.db = initializeFirestore(window.ZenApp.app, {
-                    // Auto-detect networks where Firestore's normal transport stalls.
-                    // This is especially useful on corporate/VPN/mobile networks.
-                    experimentalAutoDetectLongPolling: true,
+                    // Force the fallback transport instead of waiting for Firestore
+                    // to auto-detect the network. This avoids the long initial
+                    // WebChannel detection delay seen on some networks/browsers.
+                    experimentalForceLongPolling: true,
                     useFetchStreams: false
                 });
 
@@ -893,6 +895,81 @@
         }
 
         // --- REAL-TIME VAULT SUBSCRIPTION ---
+        function applyAuthoritativeVaultTrips(vaultId, vaultTrips, sourceLabel = 'Firestore server') {
+            window.ZenApp.cloudInitializedVaults.add(vaultId);
+            window.ZenApp.trips = vaultTrips;
+            saveVaultToLocalCache(vaultId, vaultTrips);
+
+            if (!window.ZenApp.activeTripId ||
+                !window.ZenApp.trips.some(t => t.id === window.ZenApp.activeTripId)) {
+                window.ZenApp.activeTripId = window.ZenApp.trips[0]?.id || null;
+                localStorage.setItem('zentravel_active_trip', window.ZenApp.activeTripId || '');
+            }
+
+            addLog(`Authoritative ${sourceLabel}: ${vaultTrips.length} trip(s) in ${vaultId}.`, 'success');
+            updateSyncBadge('online', 'Live Synced');
+            renderApp();
+        }
+
+        async function fetchVaultFromServer(vaultId, tripsRef) {
+            try {
+                addLog(`Requesting ${vaultId} directly from Firestore server...`);
+                const serverSnapshot = await getDocsFromServer(tripsRef);
+                const serverTrips = getVaultTripsFromSnapshot(serverSnapshot);
+
+                addLog(
+                    `SERVER read: ${serverSnapshot.size} trip(s), ` +
+                    `${serverTrips.length} in ${vaultId}.`,
+                    'success'
+                );
+
+                if (serverTrips.length > 0) {
+                    applyAuthoritativeVaultTrips(vaultId, serverTrips, 'Firestore server');
+                    return true;
+                }
+
+                // The server is genuinely empty. Only now is it safe to recover
+                // local-only data or create the default trip.
+                const localTrips = getCachedVaultTrips(vaultId).filter(t => t && t.id && t.vaultId);
+
+                if (localTrips.length > 0) {
+                    window.ZenApp.cloudInitializedVaults.add(vaultId);
+                    window.ZenApp.trips = localTrips;
+                    saveVaultToLocalCache(vaultId, localTrips);
+                    renderApp();
+                    addLog(`SERVER vault is empty; recovering ${localTrips.length} local trip(s)...`, 'info');
+
+                    for (const localTrip of localTrips) {
+                        try {
+                            await setDoc(getTripDocRef(localTrip.id), {
+                                ...localTrip,
+                                vaultId,
+                                updatedAt: Date.now(),
+                                serverUpdatedAt: serverTimestamp()
+                            });
+                        } catch (err) {
+                            addLog(`Recovery failed for ${localTrip.id}: ${err.code || 'unknown'} - ${err.message}`, 'error');
+                        }
+                    }
+                    return true;
+                }
+
+                if (vaultId === 'ZEN-8492') {
+                    addLog('SERVER vault is empty; creating default trip...', 'info');
+                    return await seedDefaultTrip();
+                }
+
+                applyAuthoritativeVaultTrips(vaultId, [], 'Firestore server');
+                return true;
+            } catch (err) {
+                addLog(`SERVER read failed: ${err.code || 'unknown'} - ${err.message}`, 'error');
+                addLog('Keeping local cache visible until Firestore reconnects.', 'info');
+                updateSyncBadge('offline', 'Server Unreachable');
+                return false;
+            }
+        }
+
+        // --- REAL-TIME VAULT SUBSCRIPTION ---
         function subscribeToVault(vaultId) {
             vaultId = String(vaultId || '').trim().toUpperCase();
             if (!vaultId) return;
@@ -904,7 +981,7 @@
             }
 
             if (window.ZenApp.unsubscribeListener) {
-                addLog(`Unsubscribing previous Vault listener...`);
+                addLog('Unsubscribing previous Vault listener...');
                 window.ZenApp.unsubscribeListener();
                 window.ZenApp.unsubscribeListener = null;
             }
@@ -916,27 +993,24 @@
             addLog(`Connecting real-time sync for Vault: ${vaultId}...`);
             document.getElementById('currentVaultDisplay').textContent = vaultId;
             document.getElementById('logConsoleVault').textContent = vaultId;
-            updateSyncBadge('syncing', 'Syncing...');
+            updateSyncBadge('syncing', 'Connecting...');
 
             let tripsRef;
             try {
-                // IMPORTANT: subscribe only to this vault instead of downloading
-                // every trip in every vault and filtering in the browser.
-                // This materially reduces the initial snapshot size and sync latency.
                 tripsRef = query(
                     getTripsCollectionRef(),
                     where('vaultId', '==', vaultId)
                 );
 
+                // First establish an explicit SERVER baseline. The local
+                // onSnapshot cache is deliberately not treated as authoritative.
+                fetchVaultFromServer(vaultId, tripsRef);
+
                 window.ZenApp.unsubscribeListener = onSnapshot(
                     tripsRef,
                     { includeMetadataChanges: true },
-                    async (snapshot) => {
+                    (snapshot) => {
                         const vaultTrips = getVaultTripsFromSnapshot(snapshot);
-                        const isInitialServerSnapshot =
-                            !window.ZenApp.cloudInitializedVaults.has(vaultId) &&
-                            !snapshot.metadata.fromCache &&
-                            !snapshot.metadata.hasPendingWrites;
 
                         addLog(
                             `Cloud snapshot: ${snapshot.size} total, ${vaultTrips.length} in ${vaultId}. ` +
@@ -944,47 +1018,21 @@
                             'success'
                         );
 
-                        if (isInitialServerSnapshot) {
-                            window.ZenApp.cloudInitializedVaults.add(vaultId);
-                            const localTrips = getCachedVaultTrips(vaultId).filter(t => t && t.id && t.vaultId);
+                        // Cache-only snapshots are useful for instant display but
+                        // must NEVER replace newer authoritative/server data.
+                        if (snapshot.metadata.fromCache && !window.ZenApp.cloudInitializedVaults.has(vaultId)) {
+                            addLog('Ignoring cache-only snapshot until server baseline is confirmed.', 'info');
+                            return;
+                        }
 
-                            if (vaultTrips.length > 0) {
-                                // Firestore is authoritative when data already exists in the cloud.
-                                window.ZenApp.trips = vaultTrips;
-                                addLog(`Loaded ${vaultTrips.length} trip(s) from Firestore.`, 'success');
-                            } else if (localTrips.length > 0) {
-                                // Recover local-only changes rather than replacing them with a fresh seed.
-                                window.ZenApp.trips = localTrips;
-                                addLog(`Cloud vault is empty; recovering ${localTrips.length} cached trip(s) to Firestore.`, 'info');
-
-                                for (const localTrip of localTrips) {
-                                    try {
-                                        await setDoc(getTripDocRef(localTrip.id), {
-                                            ...localTrip,
-                                            vaultId,
-                                            updatedAt: Date.now(),
-                                            serverUpdatedAt: serverTimestamp()
-                                        });
-                                    } catch (err) {
-                                        addLog(`Failed to recover ${localTrip.id}: ${err.message}`, 'error');
-                                    }
-                                }
-                            } else if (vaultId === 'ZEN-8492') {
-                                addLog("Vault ZEN-8492 is empty; seeding default trip...", 'info');
-                                await seedDefaultTrip();
-                                return;
-                            } else {
-                                window.ZenApp.trips = [];
-                            }
-                        } else if (vaultTrips.length > 0) {
-                            // Don't let a local pending write get replaced by its pre-write snapshot.
+                        if (vaultTrips.length > 0) {
                             window.ZenApp.trips = vaultTrips.map(cloudTrip => {
                                 if (window.ZenApp.pendingWriteIds.has(cloudTrip.id)) {
                                     return window.ZenApp.trips.find(t => t.id === cloudTrip.id) || cloudTrip;
                                 }
                                 return cloudTrip;
                             });
-                        } else if (window.ZenApp.cloudInitializedVaults.has(vaultId)) {
+                        } else if (!snapshot.metadata.hasPendingWrites && window.ZenApp.cloudInitializedVaults.has(vaultId)) {
                             window.ZenApp.trips = [];
                         }
 
@@ -1009,7 +1057,7 @@
                     }
                 );
             } catch (err) {
-                addLog(`Subscription setup failed: ${err.message}`, 'error');
+                addLog(`Subscription setup failed: ${err.code || 'unknown'} - ${err.message}`, 'error');
                 updateSyncBadge('offline', 'Sync Error');
                 loadVaultFromLocalCache(vaultId);
             }

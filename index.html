@@ -1,0 +1,1526 @@
+<!DOCTYPE html>
+<html lang="en" class="dark h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>ZenTravel - Minimalist Trip Planner</title>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#f2f8f5',
+              100: '#e1f0e9',
+              200: '#c3e2d5',
+              300: '#97cbba',
+              400: '#66aa97',
+              500: '#3a6b58', // Deep Emerald
+              600: '#2d5445',
+              700: '#223e33',
+              800: '#1c332b',
+              900: '#172b24',
+            }
+          },
+          fontFamily: {
+            sans: ['-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <!-- Firebase Compat SDKs (v11.6.1) -->
+  <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore-compat.js"></script>
+
+  <style>
+    /* Custom Scrollbars & Mobile Touch Tweaks */
+    ::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(100, 116, 139, 0.4);
+      border-radius: 9999px;
+    }
+    .tap-highlight-none {
+      -webkit-tap-highlight-color: transparent;
+    }
+    
+    /* Dark Mode Glass */
+    .dark .glass-card {
+      background: rgba(30, 41, 59, 0.75);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .dark .glass-nav {
+      background: rgba(15, 23, 42, 0.9);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    /* Light Mode Glass */
+    .glass-card {
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(226, 232, 240, 0.8);
+    }
+    .glass-nav {
+      background: rgba(255, 255, 255, 0.92);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-top: 1px solid rgba(226, 232, 240, 0.9);
+    }
+
+    .glow-accent {
+      box-shadow: 0 0 25px -5px rgba(58, 107, 88, 0.3);
+    }
+  </style>
+</head>
+<body class="h-full w-full text-slate-800 dark:text-slate-100 flex flex-col font-sans select-none overflow-hidden antialiased bg-slate-100 dark:bg-slate-950 transition-colors duration-200">
+
+  <div id="app" class="flex flex-col h-full w-full max-w-md mx-auto relative bg-slate-50 dark:bg-slate-900 shadow-2xl overflow-hidden border-x border-slate-200 dark:border-slate-800">
+    
+    <!-- STICKY HEADER -->
+    <header class="sticky top-0 z-30 glass-card px-4 py-3 flex items-center justify-between border-b border-slate-200 dark:border-slate-800/80">
+      <div class="flex items-center space-x-2.5">
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-brand-600 to-brand-400 flex items-center justify-center shadow-lg shadow-brand-500/20 active:scale-95 transition cursor-pointer" onclick="switchTab('dashboard')">
+          <i class="fa-solid fa-compass text-white text-lg"></i>
+        </div>
+        <div>
+          <h1 class="text-base font-bold tracking-wide bg-gradient-to-r from-brand-700 dark:from-white via-slate-700 dark:via-slate-200 to-brand-500 dark:to-brand-300 bg-clip-text text-transparent">ZenTravel</h1>
+          <p class="text-[10px] text-slate-500 dark:text-slate-400 font-medium -mt-0.5">Minimalist Planner</p>
+        </div>
+      </div>
+
+      <!-- Header Controls & Sync Badge -->
+      <div class="flex items-center space-x-1.5">
+        <!-- Theme Toggle -->
+        <button onclick="toggleTheme()" class="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 flex items-center justify-center border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 transition active:scale-95 tap-highlight-none" title="Toggle Light/Dark Theme">
+          <i id="theme-icon" class="fa-solid fa-moon text-xs"></i>
+        </button>
+
+        <!-- Vault Sync Button -->
+        <button id="vault-badge-btn" onclick="openVaultModal()" class="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-full bg-slate-200/80 dark:bg-slate-800/90 hover:bg-slate-300 dark:hover:bg-slate-700/80 border border-slate-300 dark:border-slate-700 transition active:scale-[0.96] tap-highlight-none">
+          <span id="sync-indicator" class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span class="text-xs font-mono text-slate-700 dark:text-slate-300 font-semibold" id="header-vault-id">ZEN-8492</span>
+          <i class="fa-solid fa-arrows-rotate text-[10px] text-slate-500 dark:text-slate-400"></i>
+        </button>
+
+        <!-- Tools / Currency Calculator -->
+        <button onclick="openToolsModal()" class="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 flex items-center justify-center border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 transition active:scale-95 tap-highlight-none" title="Tools & Currency">
+          <i class="fa-solid fa-calculator text-xs"></i>
+        </button>
+
+        <!-- Diagnostics HUD Trigger -->
+        <button onclick="openDiagnosticsModal()" class="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 flex items-center justify-center border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 transition active:scale-95 tap-highlight-none" title="Diagnostics HUD & Google Auth">
+          <i id="header-user-icon" class="fa-solid fa-user-gear text-xs"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- MAIN VIEWS CONTAINER -->
+    <main id="content-container" class="flex-1 overflow-y-auto px-4 py-4 space-y-4 pb-24">
+      <!-- Dynamic Views rendered here via JS -->
+    </main>
+
+    <!-- FLOATING TOAST NOTIFICATION CONTAINER -->
+    <div id="toast-container" class="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 w-full max-w-xs px-4 pointer-events-none space-y-2"></div>
+
+    <!-- BOTTOM TAB NAVIGATION -->
+    <nav class="fixed bottom-0 left-0 right-0 z-40 max-w-md mx-auto glass-nav px-2 py-2 flex justify-around items-center">
+      <button onclick="switchTab('dashboard')" id="nav-dashboard" class="nav-btn flex flex-col items-center py-1 px-3 rounded-xl transition-all tap-highlight-none text-brand-600 dark:text-brand-400 font-bold">
+        <i class="fa-solid fa-chart-pie text-base mb-1"></i>
+        <span class="text-[10px] font-medium">Dashboard</span>
+      </button>
+      <button onclick="switchTab('logistics')" id="nav-logistics" class="nav-btn flex flex-col items-center py-1 px-3 rounded-xl transition-all tap-highlight-none text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200">
+        <i class="fa-solid fa-plane-departure text-base mb-1"></i>
+        <span class="text-[10px] font-medium">Logistics</span>
+      </button>
+      <button onclick="switchTab('itinerary')" id="nav-itinerary" class="nav-btn flex flex-col items-center py-1 px-3 rounded-xl transition-all tap-highlight-none text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200">
+        <i class="fa-solid fa-calendar-days text-base mb-1"></i>
+        <span class="text-[10px] font-medium">Itinerary</span>
+      </button>
+      <button onclick="switchTab('budget')" id="nav-budget" class="nav-btn flex flex-col items-center py-1 px-3 rounded-xl transition-all tap-highlight-none text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200">
+        <i class="fa-solid fa-wallet text-base mb-1"></i>
+        <span class="text-[10px] font-medium">Budget</span>
+      </button>
+      <button onclick="switchTab('todo')" id="nav-todo" class="nav-btn flex flex-col items-center py-1 px-3 rounded-xl transition-all tap-highlight-none text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200">
+        <i class="fa-solid fa-list-check text-base mb-1"></i>
+        <span class="text-[10px] font-medium">To-Do</span>
+      </button>
+    </nav>
+  </div>
+
+  <!-- VAULT SYNC MODAL -->
+  <div id="vault-modal" class="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="glass-card w-full max-w-sm rounded-2xl p-5 border border-slate-200 dark:border-slate-700 shadow-2xl relative">
+      <button onclick="closeVaultModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 dark:hover:text-white text-lg">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+
+      <div class="flex items-center space-x-3 mb-4">
+        <div class="w-10 h-10 rounded-xl bg-brand-500/20 text-brand-600 dark:text-brand-400 border border-brand-500/30 flex items-center justify-center text-lg">
+          <i class="fa-solid fa-vault"></i>
+        </div>
+        <div>
+          <h3 class="text-base font-bold text-slate-900 dark:text-white">Vault Sync Code</h3>
+          <p class="text-xs text-slate-500 dark:text-slate-400">Sync trip data live across devices</p>
+        </div>
+      </div>
+
+      <div class="bg-slate-100 dark:bg-slate-800/90 rounded-xl p-3 border border-slate-200 dark:border-slate-700 mb-4 text-center">
+        <p class="text-[11px] text-slate-500 dark:text-slate-400 uppercase tracking-wider font-semibold mb-1">Active Cloud Vault</p>
+        <div class="flex items-center justify-center space-x-2">
+          <span id="modal-vault-id" class="text-xl font-mono font-bold text-brand-600 dark:text-brand-300 tracking-wider">ZEN-8492</span>
+          <button onclick="copyVaultCode()" class="p-1.5 rounded-lg bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 active:scale-95 transition" title="Copy Code">
+            <i class="fa-regular fa-copy text-xs"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="space-y-3">
+        <label class="block text-xs font-medium text-slate-700 dark:text-slate-300">Join or Create Vault Code</label>
+        <div class="flex space-x-2">
+          <input type="text" id="vault-input" placeholder="e.g. ZEN-1234" class="flex-1 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-800 dark:text-white font-mono placeholder-slate-400 focus:outline-none focus:border-brand-500 uppercase">
+          <button onclick="joinVault()" class="px-4 py-2 bg-brand-600 hover:bg-brand-500 text-white rounded-xl text-sm font-medium transition active:scale-95">
+            Join
+          </button>
+        </div>
+        <p class="text-[11px] text-slate-500 dark:text-slate-400 leading-tight">Entering an existing Vault Code connects all synced trip plans, flights, itineraries, and expenses instantaneously.</p>
+      </div>
+
+      <div class="mt-4 pt-3 border-t border-slate-200 dark:border-slate-800 flex justify-between items-center">
+        <button onclick="generateNewVault()" class="text-xs text-brand-600 dark:text-brand-400 hover:underline font-medium flex items-center space-x-1">
+          <i class="fa-solid fa-plus text-[10px]"></i>
+          <span>Generate New Vault</span>
+        </button>
+        <button onclick="closeVaultModal()" class="px-3 py-1.5 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg text-xs font-medium">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- DIAGNOSTICS & GOOGLE AUTH HUD MODAL -->
+  <div id="diagnostics-modal" class="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="glass-card w-full max-w-md rounded-2xl p-5 border border-slate-200 dark:border-slate-700 shadow-2xl relative max-h-[90vh] flex flex-col">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
+        <div class="flex items-center space-x-2">
+          <i class="fa-solid fa-microchip text-brand-600 dark:text-brand-400"></i>
+          <h3 class="text-sm font-bold text-slate-900 dark:text-white">Diagnostics & Google Auth</h3>
+        </div>
+        <button onclick="closeDiagnosticsModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-white">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="py-3 space-y-3 overflow-y-auto flex-1 text-xs">
+        <!-- USER AUTH CARD -->
+        <div class="bg-slate-100 dark:bg-slate-800/80 rounded-xl p-3 border border-slate-200 dark:border-slate-700 space-y-2">
+          <div class="flex items-center space-x-3">
+            <div id="hud-user-avatar" class="w-10 h-10 rounded-full bg-slate-300 dark:bg-slate-700 flex items-center justify-center text-slate-600 dark:text-slate-300 text-lg overflow-hidden border border-slate-400 dark:border-slate-600">
+              <i class="fa-solid fa-user"></i>
+            </div>
+            <div class="flex-1 min-w-0">
+              <h4 id="hud-user-name" class="font-bold text-slate-900 dark:text-white truncate">Anonymous User</h4>
+              <p id="hud-user-email" class="text-[11px] text-slate-500 dark:text-slate-400 truncate">Not signed in with Google</p>
+            </div>
+          </div>
+
+          <div id="google-auth-actions" class="pt-2 border-t border-slate-200 dark:border-slate-700/60 flex space-x-2">
+            <button id="google-signin-btn" onclick="signInWithGoogle()" class="flex-1 py-2 px-3 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-800 dark:text-white rounded-xl font-medium border border-slate-300 dark:border-slate-700 flex items-center justify-center space-x-2 active:scale-95 transition shadow-sm">
+              <svg class="w-4 h-4" viewBox="0 0 24 24">
+                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+              </svg>
+              <span>Sign in with Google</span>
+            </button>
+            <button id="google-signout-btn" onclick="signOutUser()" class="hidden py-2 px-3 bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 rounded-xl font-medium border border-rose-500/30 flex items-center justify-center space-x-1 active:scale-95 transition">
+              <i class="fa-solid fa-right-from-bracket mr-1"></i>
+              <span>Sign Out</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- DIAGNOSTIC STATS -->
+        <div class="bg-slate-100 dark:bg-slate-800/80 rounded-xl p-3 border border-slate-200 dark:border-slate-700 space-y-1.5">
+          <div class="flex justify-between items-center">
+            <span class="text-slate-500 dark:text-slate-400">Auth Status:</span>
+            <span id="hud-auth-mode" class="font-mono text-brand-600 dark:text-brand-300 font-semibold">Active</span>
+          </div>
+          <div class="flex justify-between items-center">
+            <span class="text-slate-500 dark:text-slate-400">User UID:</span>
+            <span id="hud-user-uid" class="font-mono text-slate-700 dark:text-slate-300 truncate max-w-[160px]">Anon_****</span>
+          </div>
+          <div class="flex justify-between items-center">
+            <span class="text-slate-500 dark:text-slate-400">Active Vault:</span>
+            <span id="hud-vault-id" class="font-mono text-slate-700 dark:text-slate-300">ZEN-****</span>
+          </div>
+          <div class="flex justify-between items-center">
+            <span class="text-slate-500 dark:text-slate-400">Firestore Path:</span>
+            <span id="hud-firestore-path" class="font-mono text-[10px] text-slate-500 dark:text-slate-400 truncate max-w-[180px]">/public/data/vaults/...</span>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <button onclick="reauthAnon()" class="p-2 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 rounded-lg text-slate-800 dark:text-slate-200 text-center font-medium border border-slate-300 dark:border-slate-700 active:scale-95 transition">
+            <i class="fa-solid fa-user-shield text-brand-500 mr-1"></i> Re-Auth Anon
+          </button>
+          <button onclick="pingVaultWrite()" class="p-2 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 rounded-lg text-slate-800 dark:text-slate-200 text-center font-medium border border-slate-300 dark:border-slate-700 active:scale-95 transition">
+            <i class="fa-solid fa-bolt text-amber-500 mr-1"></i> Force Vault Save
+          </button>
+        </div>
+
+        <!-- DIAGNOSTIC CONSOLE LOGS & COPY BUTTON -->
+        <div>
+          <div class="flex justify-between items-center mb-1.5">
+            <span class="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Console Diagnostic Logs</span>
+            <div class="flex items-center space-x-2">
+              <button onclick="copyDiagnosticLogs()" class="text-[10px] bg-brand-600 hover:bg-brand-500 text-white px-2 py-0.5 rounded font-medium flex items-center space-x-1 active:scale-95 transition">
+                <i class="fa-regular fa-copy"></i>
+                <span>Copy Logs</span>
+              </button>
+              <button onclick="clearDiagnosticLogs()" class="text-[10px] text-slate-400 hover:underline">Clear</button>
+            </div>
+          </div>
+          <div id="diagnostic-logs" class="bg-slate-900 rounded-xl p-2.5 font-mono text-[10px] text-emerald-400 h-32 overflow-y-auto border border-slate-800 space-y-1 leading-relaxed">
+            <div>[INIT] Diagnostics HUD mounted successfully...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FLIGHT MODAL -->
+  <div id="flight-modal" class="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="glass-card w-full max-w-sm rounded-2xl p-5 border border-slate-200 dark:border-slate-700 shadow-2xl relative">
+      <button onclick="closeFlightModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 dark:hover:text-white">
+        <i class="fa-solid fa-xmark text-lg"></i>
+      </button>
+      <h3 id="flight-modal-title" class="text-base font-bold text-slate-900 dark:text-white mb-3">Add Flight Segment</h3>
+      <form id="flight-form" onsubmit="saveFlight(event)" class="space-y-3">
+        <input type="hidden" id="flight-id">
+        <div>
+          <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Leg Type</label>
+          <select id="flight-type" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white focus:outline-none focus:border-brand-500">
+            <option value="Outbound">Outbound Flight</option>
+            <option value="Transit">Transit / Connection</option>
+            <option value="Return">Return Flight</option>
+          </select>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Airline</label>
+            <input type="text" id="flight-airline" required placeholder="Japan Airlines" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white">
+          </div>
+          <div>
+            <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Flight No.</label>
+            <input type="text" id="flight-num" required placeholder="JL001" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white">
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Route (From -> To)</label>
+          <input type="text" id="flight-route" required placeholder="SFO -> HND" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white">
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Departure</label>
+            <input type="text" id="flight-dept" placeholder="Oct 12, 11:30 AM" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white">
+          </div>
+          <div>
+            <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Arrival</label>
+            <input type="text" id="flight-arr" placeholder="Oct 13, 3:15 PM" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white">
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">PNR / Confirm</label>
+            <input type="text" id="flight-pnr" placeholder="XYZ123" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white font-mono uppercase">
+          </div>
+          <div>
+            <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Gate / Seat</label>
+            <input type="text" id="flight-gate" placeholder="Gate B12, 14A" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white">
+          </div>
+        </div>
+        <div class="flex space-x-2 pt-2">
+          <button type="button" onclick="closeFlightModal()" class="flex-1 py-2 bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-medium">Cancel</button>
+          <button type="submit" class="flex-1 py-2 bg-brand-600 hover:bg-brand-500 text-white rounded-xl text-xs font-medium">Save Flight</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- HOTEL MODAL -->
+  <div id="hotel-modal" class="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="glass-card w-full max-w-sm rounded-2xl p-5 border border-slate-200 dark:border-slate-700 shadow-2xl relative">
+      <button onclick="closeHotelModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 dark:hover:text-white">
+        <i class="fa-solid fa-xmark text-lg"></i>
+      </button>
+      <h3 id="hotel-modal-title" class="text-base font-bold text-slate-900 dark:text-white mb-3">Add Accommodation</h3>
+      <form id="hotel-form" onsubmit="saveHotel(event)" class="space-y-3">
+        <input type="hidden" id="hotel-id">
+        <div>
+          <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Property Name</label>
+          <input type="text" id="hotel-name" required placeholder="Kyoto Ryokan Park" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white">
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Area / Tag</label>
+            <input type="text" id="hotel-area" placeholder="Gion District" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white">
+          </div>
+          <div>
+            <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Confirmation</label>
+            <input type="text" id="hotel-pnr" placeholder="HTL-9921" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white font-mono">
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Check-In</label>
+            <input type="text" id="hotel-in" placeholder="Oct 13 (3 PM)" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white">
+          </div>
+          <div>
+            <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Check-Out</label>
+            <input type="text" id="hotel-out" placeholder="Oct 18 (11 AM)" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white">
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Address / Notes</label>
+          <input type="text" id="hotel-address" placeholder="123 Hanami Lane, Higashiyama" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white">
+        </div>
+        <div class="flex space-x-2 pt-2">
+          <button type="button" onclick="closeHotelModal()" class="flex-1 py-2 bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-medium">Cancel</button>
+          <button type="submit" class="flex-1 py-2 bg-brand-600 hover:bg-brand-500 text-white rounded-xl text-xs font-medium">Save Hotel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ITINERARY MODAL -->
+  <div id="itinerary-modal" class="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="glass-card w-full max-w-sm rounded-2xl p-5 border border-slate-200 dark:border-slate-700 shadow-2xl relative">
+      <button onclick="closeItineraryModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 dark:hover:text-white">
+        <i class="fa-solid fa-xmark text-lg"></i>
+      </button>
+      <h3 class="text-base font-bold text-slate-900 dark:text-white mb-3">Add Itinerary Event</h3>
+      <form onsubmit="saveItineraryItem(event)" class="space-y-3">
+        <div>
+          <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Day / Date Label</label>
+          <input type="text" id="itin-day" required placeholder="Day 1 - Oct 14" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white">
+        </div>
+        <div class="grid grid-cols-3 gap-2">
+          <div>
+            <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Time</label>
+            <input type="text" id="itin-time" required placeholder="09:00 AM" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white">
+          </div>
+          <div class="col-span-2">
+            <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Activity Title</label>
+            <input type="text" id="itin-title" required placeholder="Visit Fushimi Inari Shrine" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white">
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Location / Notes</label>
+          <input type="text" id="itin-notes" placeholder="Fushimi Ward, Kyoto (Go early)" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white">
+        </div>
+        <div class="flex space-x-2 pt-2">
+          <button type="button" onclick="closeItineraryModal()" class="flex-1 py-2 bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-medium">Cancel</button>
+          <button type="submit" class="flex-1 py-2 bg-brand-600 hover:bg-brand-500 text-white rounded-xl text-xs font-medium">Add Activity</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- TRIP OVERVIEW EDIT MODAL -->
+  <div id="trip-edit-modal" class="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="glass-card w-full max-w-sm rounded-2xl p-5 border border-slate-200 dark:border-slate-700 shadow-2xl relative">
+      <button onclick="closeTripEditModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 dark:hover:text-white">
+        <i class="fa-solid fa-xmark text-lg"></i>
+      </button>
+      <h3 class="text-base font-bold text-slate-900 dark:text-white mb-3">Edit Trip Overview</h3>
+      <form onsubmit="saveTripOverview(event)" class="space-y-3">
+        <div>
+          <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Trip Destination</label>
+          <input type="text" id="trip-dest-input" required placeholder="Tokyo & Kyoto, Japan" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white">
+        </div>
+        <div>
+          <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Dates Range</label>
+          <input type="text" id="trip-dates-input" required placeholder="Oct 12 - Oct 24, 2026" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white">
+        </div>
+        <div>
+          <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Overall Budget Limit ($)</label>
+          <input type="number" id="trip-budget-input" required placeholder="3500" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white">
+        </div>
+        <div class="flex space-x-2 pt-2">
+          <button type="button" onclick="closeTripEditModal()" class="flex-1 py-2 bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-medium">Cancel</button>
+          <button type="submit" class="flex-1 py-2 bg-brand-600 hover:bg-brand-500 text-white rounded-xl text-xs font-medium">Update Overview</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- CURRENCY TOOLS MODAL -->
+  <div id="tools-modal" class="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="glass-card w-full max-w-sm rounded-2xl p-5 border border-slate-200 dark:border-slate-700 shadow-2xl relative space-y-4">
+      <button onclick="closeToolsModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 dark:hover:text-white">
+        <i class="fa-solid fa-xmark text-lg"></i>
+      </button>
+      <div class="flex items-center space-x-2">
+        <i class="fa-solid fa-calculator text-brand-600 dark:text-brand-400"></i>
+        <h3 class="text-base font-bold text-slate-900 dark:text-white">Currency Converter</h3>
+      </div>
+
+      <div class="bg-slate-100 dark:bg-slate-800/80 p-3.5 rounded-xl border border-slate-200 dark:border-slate-700 space-y-3">
+        <div class="flex items-center space-x-2">
+          <input type="number" id="calc-amount" value="100" oninput="calculateCurrency()" class="flex-1 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-800 dark:text-white font-mono">
+          <select id="calc-from" onchange="calculateCurrency()" class="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-2 py-2 text-xs text-slate-800 dark:text-white">
+            <option value="USD">USD ($)</option>
+            <option value="EUR">EUR (€)</option>
+            <option value="GBP">GBP (£)</option>
+            <option value="SGD">SGD ($)</option>
+          </select>
+        </div>
+        <div class="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 px-1">
+          <span>Converted to JPY (¥):</span>
+          <i class="fa-solid fa-arrow-down-long"></i>
+        </div>
+        <div class="bg-white dark:bg-slate-950 p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-center">
+          <span id="calc-result" class="text-xl font-bold font-mono text-brand-600 dark:text-brand-300">¥15,400</span>
+        </div>
+      </div>
+
+      <div class="pt-2 border-t border-slate-200 dark:border-slate-800 flex justify-between items-center">
+        <span class="text-[11px] text-slate-500 dark:text-slate-400">Rate: 1 USD ≈ 154 JPY</span>
+        <button onclick="closeToolsModal()" class="px-3 py-1 bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-lg text-xs font-medium">Done</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- EXPENSE MODAL -->
+  <div id="expense-modal" class="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="glass-card w-full max-w-sm rounded-2xl p-5 border border-slate-200 dark:border-slate-700 shadow-2xl relative">
+      <button onclick="closeExpenseModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 dark:hover:text-white">
+        <i class="fa-solid fa-xmark text-lg"></i>
+      </button>
+      <h3 class="text-base font-bold text-slate-900 dark:text-white mb-3">Add Expense Item</h3>
+      <form onsubmit="saveExpenseItem(event)" class="space-y-3">
+        <div>
+          <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Category</label>
+          <select id="exp-category" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white focus:outline-none focus:border-brand-500">
+            <option value="Flights">Flights</option>
+            <option value="Lodging">Lodging</option>
+            <option value="Dining">Dining & Food</option>
+            <option value="Activities">Activities & Tours</option>
+            <option value="Transit">Transport & Trains</option>
+            <option value="Shopping">Shopping & Misc</option>
+          </select>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Item Title</label>
+            <input type="text" id="exp-title" required placeholder="Shinkansen Bullet Train Pass" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white">
+          </div>
+          <div>
+            <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Cost ($)</label>
+            <input type="number" step="0.01" id="exp-amount" required placeholder="210.00" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white">
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Date</label>
+          <input type="text" id="exp-date" placeholder="Oct 14" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white">
+        </div>
+        <div class="flex space-x-2 pt-2">
+          <button type="button" onclick="closeExpenseModal()" class="flex-1 py-2 bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-medium">Cancel</button>
+          <button type="submit" class="flex-1 py-2 bg-brand-600 hover:bg-brand-500 text-white rounded-xl text-xs font-medium">Add Expense</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- TO-DO MODAL -->
+  <div id="todo-modal" class="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="glass-card w-full max-w-sm rounded-2xl p-5 border border-slate-200 dark:border-slate-700 shadow-2xl relative">
+      <button onclick="closeTodoModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 dark:hover:text-white">
+        <i class="fa-solid fa-xmark text-lg"></i>
+      </button>
+      <h3 class="text-base font-bold text-slate-900 dark:text-white mb-3">Add Task / Packing Item</h3>
+      <form onsubmit="saveTodoItem(event)" class="space-y-3">
+        <div>
+          <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Task Category</label>
+          <select id="todo-cat" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white focus:outline-none focus:border-brand-500">
+            <option value="Packing">Packing List</option>
+            <option value="Documents">Documents & Travel</option>
+            <option value="Booking">Bookings & Reservations</option>
+            <option value="Misc">Miscellaneous</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">Task Title</label>
+          <input type="text" id="todo-title" required placeholder="Pack universal power adapter" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white">
+        </div>
+        <div class="flex space-x-2 pt-2">
+          <button type="button" onclick="closeTodoModal()" class="flex-1 py-2 bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-medium">Cancel</button>
+          <button type="submit" class="flex-1 py-2 bg-brand-600 hover:bg-brand-500 text-white rounded-xl text-xs font-medium">Add Task</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // App Identifier & Firebase API Configuration
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'zentravel-app';
+
+    // Provided User Firebase Config
+    const userFirebaseConfig = {
+      apiKey: "AIzaSyA2wyg7enqbm29V4v31hvNj1ERKdyZ41p4",
+      authDomain: "my-zen-travel.firebaseapp.com",
+      projectId: "my-zen-travel",
+      storageBucket: "my-zen-travel.firebasestorage.app",
+      messagingSenderId: "730995974564",
+      appId: "1:730995974564:web:0a30fb7fad38ad962aa131"
+    };
+
+    // Global Trip State Variables
+    let activeTab = 'dashboard';
+    let vaultId = localStorage.getItem('zentravel_vault_id') || 'ZEN-8492';
+    let db = null;
+    let auth = null;
+    let currentUser = null;
+    let unsubscribeVaultListener = null;
+
+    // Initial Default Data Structure
+    let tripData = {
+      destination: "Tokyo & Kyoto, Japan",
+      dates: "Oct 12 - Oct 24, 2026",
+      totalBudget: 3500,
+      flights: [
+        {
+          id: 'f-1',
+          type: 'Outbound',
+          airline: 'Japan Airlines',
+          flightNum: 'JL001',
+          route: 'SFO -> HND',
+          dept: 'Oct 12, 11:30 AM',
+          arr: 'Oct 13, 03:15 PM',
+          pnr: 'JL782X',
+          gate: 'Gate A12, 14A'
+        },
+        {
+          id: 'f-2',
+          type: 'Return',
+          airline: 'Japan Airlines',
+          flightNum: 'JL002',
+          route: 'KIX -> SFO',
+          dept: 'Oct 24, 05:40 PM',
+          arr: 'Oct 24, 11:20 AM',
+          pnr: 'JL782X',
+          gate: 'Gate B04, 14C'
+        }
+      ],
+      hotels: [
+        {
+          id: 'h-1',
+          name: 'Shinjuku Granbell Hotel',
+          area: 'Tokyo',
+          pnr: 'SGH-9910',
+          checkIn: 'Oct 13 (3:00 PM)',
+          checkOut: 'Oct 18 (11:00 AM)',
+          address: '2-14-5 Kabukicho, Shinjuku, Tokyo'
+        },
+        {
+          id: 'h-2',
+          name: 'Gion Ryokan Karaku',
+          area: 'Kyoto',
+          pnr: 'GRK-3341',
+          checkIn: 'Oct 18 (4:00 PM)',
+          checkOut: 'Oct 24 (10:00 AM)',
+          address: 'Gion-machi Minamigawa, Kyoto'
+        }
+      ],
+      itinerary: [
+        { id: 'i-1', day: 'Day 1 - Oct 13', time: '04:30 PM', title: 'Hotel Check-in & Rest', notes: 'Shinjuku area exploring & Ramen dinner', done: true },
+        { id: 'i-2', day: 'Day 2 - Oct 14', time: '09:00 AM', title: 'Meiji Shrine & Harajuku', notes: 'Walk through Yoyogi Park & Takeshita St', done: true },
+        { id: 'i-3', day: 'Day 2 - Oct 14', time: '02:00 PM', title: 'Shibuya Crossing & Sky Tower', notes: 'Pre-booked tickets for 3:30 PM sunset', done: false },
+        { id: 'i-4', day: 'Day 3 - Oct 15', time: '08:00 AM', title: 'Tsukiji Outer Market Food Tour', notes: 'Fresh sushi breakfast & matcha tasting', done: false },
+        { id: 'i-5', day: 'Day 6 - Oct 18', time: '11:30 AM', title: 'Shinkansen Bullet Train to Kyoto', notes: 'Reserved Seats - Mount Fuji View (Right Side)', done: false }
+      ],
+      expenses: [
+        { id: 'e-1', category: 'Flights', title: 'Roundtrip JAL Flights', amount: 1120.00, date: 'Sep 01' },
+        { id: 'e-2', category: 'Lodging', title: 'Tokyo Hotel Deposit', amount: 650.00, date: 'Sep 05' },
+        { id: 'e-3', category: 'Lodging', title: 'Kyoto Ryokan Stay', amount: 580.00, date: 'Sep 10' },
+        { id: 'e-4', category: 'Transit', title: '7-Day JR Pass', amount: 320.00, date: 'Sep 15' },
+        { id: 'e-5', category: 'Activities', title: 'Shibuya Sky & TeamLab', amount: 54.00, date: 'Sep 20' }
+      ],
+      todos: [
+        { id: 't-1', category: 'Documents', title: 'Passport renewal / check expiration', done: true },
+        { id: 't-2', category: 'Documents', title: 'Fill Visit Japan Web customs form online', done: true },
+        { id: 't-3', category: 'Booking', title: 'Reserve Pocket Wi-Fi router for Tokyo pickup', done: true },
+        { id: 't-4', category: 'Packing', title: 'Universal plug adapter & power bank', done: false },
+        { id: 't-5', category: 'Packing', title: 'Comfortable walking shoes & light rain jacket', done: false },
+        { id: 't-6', category: 'Misc', title: 'Notify credit cards of foreign travel', done: false }
+      ]
+    };
+
+    function getVaultDocRef(vId) {
+      if (!db) return null;
+      // Rule 1 Strict Path: /artifacts/{appId}/public/data/{collectionName}/{docId}
+      return db.collection('artifacts').doc(appId).collection('public').doc('data').collection('vaults').doc(vId);
+    }
+
+    function initFirebase() {
+      try {
+        let finalConfig = userFirebaseConfig;
+        if (typeof __firebase_config !== 'undefined') {
+          try {
+            finalConfig = JSON.parse(__firebase_config);
+          } catch(e) {}
+        }
+
+        if (!firebase.apps.length) {
+          firebase.initializeApp(finalConfig);
+        }
+        db = firebase.firestore();
+        auth = firebase.auth();
+
+        logDiagnostic("[FIREBASE] Initialized with API Key: " + finalConfig.apiKey.substring(0, 8) + "...");
+
+        const initialToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        if (initialToken) {
+          auth.signInWithCustomToken(initialToken).catch(() => auth.signInAnonymously());
+        } else {
+          auth.signInAnonymously();
+        }
+
+        auth.onAuthStateChanged((user) => {
+          if (user) {
+            currentUser = user;
+            updateUserUI(user);
+            logDiagnostic(`[AUTH] Logged in as: ${user.isAnonymous ? 'Anonymous' : (user.email || 'Google User')} (UID: ${user.uid.substring(0, 8)}...)`);
+            setupVaultSync();
+          } else {
+            currentUser = null;
+            updateUserUI(null);
+            logDiagnostic("[AUTH] User signed out");
+          }
+        });
+      } catch (err) {
+        logDiagnostic(`[ERROR] Firebase init failed: ${err.message}`);
+        loadFromLocalStorage();
+        renderActiveTab();
+      }
+    }
+
+    function setupVaultSync() {
+      if (!db || !currentUser) return;
+
+      if (unsubscribeVaultListener) {
+        unsubscribeVaultListener();
+      }
+
+      const docRef = getVaultDocRef(vaultId);
+      if (!docRef) return;
+
+      const pathStr = `/artifacts/${appId}/public/data/vaults/${vaultId}`;
+      document.getElementById('hud-firestore-path').innerText = pathStr;
+      document.getElementById('sync-indicator').className = "w-2 h-2 rounded-full bg-amber-400 animate-pulse";
+      logDiagnostic(`[SYNC] Subscribing to path: ${pathStr}`);
+
+      unsubscribeVaultListener = docRef.onSnapshot((docSnap) => {
+        if (docSnap.exists) {
+          const remoteData = docSnap.data();
+          if (remoteData && remoteData.tripData) {
+            tripData = remoteData.tripData;
+            saveToLocalStorage();
+            renderActiveTab();
+            logDiagnostic(`[SYNC] Live data synced for Vault ${vaultId}`);
+          }
+        } else {
+          logDiagnostic(`[SYNC] Vault ${vaultId} absent on cloud. Creating & uploading initial state...`);
+          saveTripToVault();
+        }
+        document.getElementById('sync-indicator').className = "w-2 h-2 rounded-full bg-emerald-500";
+      }, (error) => {
+        logDiagnostic(`[SYNC ERROR] ${error.message}`);
+        document.getElementById('sync-indicator').className = "w-2 h-2 rounded-full bg-rose-500";
+      });
+    }
+
+    function saveTripToVault() {
+      saveToLocalStorage();
+      if (!db || !currentUser) return;
+
+      const docRef = getVaultDocRef(vaultId);
+      if (!docRef) return;
+
+      docRef.set({
+        tripData: tripData,
+        lastUpdated: firebase.firestore.FieldValue.serverTimestamp(),
+        updatedBy: currentUser.uid
+      }, { merge: true })
+      .then(() => {
+        logDiagnostic(`[SAVE] Vault ${vaultId} state updated successfully`);
+      })
+      .catch((err) => {
+        logDiagnostic(`[SAVE ERROR] Vault ${vaultId}: ${err.message}`);
+      });
+    }
+
+    function saveToLocalStorage() {
+      try {
+        localStorage.setItem('zentravel_trip_data', JSON.stringify(tripData));
+        localStorage.setItem('zentravel_vault_id', vaultId);
+      } catch(e) {}
+    }
+
+    function loadFromLocalStorage() {
+      try {
+        const saved = localStorage.getItem('zentravel_trip_data');
+        if (saved) {
+          tripData = JSON.parse(saved);
+        }
+      } catch(e) {}
+    }
+
+    function signInWithGoogle() {
+      if (!auth) {
+        showToast("Auth SDK not ready", "error");
+        return;
+      }
+      const provider = new firebase.auth.GoogleAuthProvider();
+      logDiagnostic("[AUTH] Requesting Google Sign-In popup...");
+      auth.signInWithPopup(provider)
+        .then((result) => {
+          showToast(`Welcome ${result.user.displayName || 'Traveler'}!`);
+          logDiagnostic(`[AUTH] Google Sign-In success: ${result.user.email}`);
+        })
+        .catch((error) => {
+          logDiagnostic(`[AUTH ERROR] Google Sign-In: ${error.message}`);
+          showToast(`Google Sign-In failed: ${error.message}`, 'error');
+        });
+    }
+
+    function signOutUser() {
+      if (!auth) return;
+      auth.signOut().then(() => {
+        showToast("Signed out. Re-authenticating anonymously...");
+        auth.signInAnonymously();
+      });
+    }
+
+    function updateUserUI(user) {
+      const modeEl = document.getElementById('hud-auth-mode');
+      const uidEl = document.getElementById('hud-user-uid');
+      const nameEl = document.getElementById('hud-user-name');
+      const emailEl = document.getElementById('hud-user-email');
+      const avatarEl = document.getElementById('hud-user-avatar');
+      const signinBtn = document.getElementById('google-signin-btn');
+      const signoutBtn = document.getElementById('google-signout-btn');
+      const headerUserIcon = document.getElementById('header-user-icon');
+
+      if (user && !user.isAnonymous) {
+        modeEl.innerText = "Google User";
+        uidEl.innerText = user.uid;
+        nameEl.innerText = user.displayName || "Google User";
+        emailEl.innerText = user.email || "";
+        
+        if (user.photoURL) {
+          avatarEl.innerHTML = `<img src="${user.photoURL}" class="w-full h-full object-cover">`;
+        } else {
+          avatarEl.innerHTML = `<i class="fa-solid fa-user-check text-brand-500"></i>`;
+        }
+
+        signinBtn.classList.add('hidden');
+        signoutBtn.classList.remove('hidden');
+        headerUserIcon.className = "fa-solid fa-user-check text-xs text-brand-500 dark:text-brand-400";
+      } else {
+        modeEl.innerText = user ? "Anonymous" : "Disconnected";
+        uidEl.innerText = user ? user.uid.substring(0, 12) + "..." : "None";
+        nameEl.innerText = "Anonymous Traveler";
+        emailEl.innerText = "Sign in to backup to Google Account";
+        avatarEl.innerHTML = `<i class="fa-solid fa-user"></i>`;
+
+        signinBtn.classList.remove('hidden');
+        signoutBtn.classList.add('hidden');
+        headerUserIcon.className = "fa-solid fa-user-gear text-xs";
+      }
+    }
+
+    function reauthAnon() {
+      if (!auth) return;
+      auth.signInAnonymously().then(() => {
+        showToast("Re-authenticated anonymously");
+      });
+    }
+
+    function pingVaultWrite() {
+      saveTripToVault();
+      showToast("Triggered Cloud Vault Sync!");
+    }
+
+    function copyDiagnosticLogs() {
+      const logsEl = document.getElementById('diagnostic-logs');
+      const text = logsEl.innerText || logsEl.textContent;
+      
+      const tempTextArea = document.createElement("textarea");
+      tempTextArea.value = text;
+      document.body.appendChild(tempTextArea);
+      tempTextArea.select();
+      try {
+        document.execCommand('copy');
+        showToast("Diagnostic logs copied to clipboard!");
+      } catch (err) {
+        showToast("Failed to copy logs", "error");
+      }
+      document.body.removeChild(tempTextArea);
+    }
+
+    function logDiagnostic(msg) {
+      const logsEl = document.getElementById('diagnostic-logs');
+      if (!logsEl) return;
+      const timeStr = new Date().toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      const entry = document.createElement('div');
+      entry.innerText = `[${timeStr}] ${msg}`;
+      logsEl.appendChild(entry);
+      logsEl.scrollTop = logsEl.scrollHeight;
+    }
+
+    function clearDiagnosticLogs() {
+      const logsEl = document.getElementById('diagnostic-logs');
+      if (logsEl) logsEl.innerHTML = '';
+    }
+
+    function switchTab(tab) {
+      activeTab = tab;
+      document.querySelectorAll('.nav-btn').forEach(btn => {
+        btn.classList.remove('text-brand-600', 'dark:text-brand-400', 'font-bold');
+        btn.classList.add('text-slate-500', 'dark:text-slate-400');
+      });
+
+      const activeNav = document.getElementById(`nav-${tab}`);
+      if (activeNav) {
+        activeNav.classList.remove('text-slate-500', 'dark:text-slate-400');
+        activeNav.classList.add('text-brand-600', 'dark:text-brand-400', 'font-bold');
+      }
+
+      renderActiveTab();
+    }
+
+    function renderActiveTab() {
+      const container = document.getElementById('content-container');
+      if (!container) return;
+
+      if (activeTab === 'dashboard') {
+        container.innerHTML = renderDashboardView();
+      } else if (activeTab === 'logistics') {
+        container.innerHTML = renderLogisticsView();
+      } else if (activeTab === 'itinerary') {
+        container.innerHTML = renderItineraryView();
+      } else if (activeTab === 'budget') {
+        container.innerHTML = renderBudgetView();
+      } else if (activeTab === 'todo') {
+        container.innerHTML = renderTodoView();
+      }
+    }
+
+    function renderDashboardView() {
+      const spent = tripData.expenses.reduce((sum, e) => sum + Number(e.amount || 0), 0);
+      const percentSpent = Math.min(Math.round((spent / tripData.totalBudget) * 100), 100);
+      const completedTodos = tripData.todos.filter(t => t.done).length;
+      const totalTodos = tripData.todos.length;
+      const completedItin = tripData.itinerary.filter(i => i.done).length;
+
+      return `
+        <!-- TRIP HERO CARD -->
+        <div class="glass-card rounded-2xl p-4 relative overflow-hidden border border-brand-500/20 glow-accent">
+          <div class="absolute -right-6 -bottom-6 w-32 h-32 rounded-full bg-brand-500/10 blur-2xl"></div>
+          
+          <div class="flex justify-between items-start mb-3">
+            <div>
+              <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-brand-500/15 text-brand-700 dark:text-brand-300 border border-brand-500/30">
+                Upcoming Journey
+              </span>
+              <h2 class="text-xl font-bold text-slate-900 dark:text-white mt-1.5 flex items-center space-x-2">
+                <span>${tripData.destination}</span>
+              </h2>
+              <p class="text-xs text-slate-500 dark:text-slate-400 font-medium flex items-center mt-0.5">
+                <i class="fa-regular fa-calendar mr-1.5 text-brand-500"></i> ${tripData.dates}
+              </p>
+            </div>
+            <button onclick="openTripEditModal()" class="p-2 rounded-xl bg-slate-200/80 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition active:scale-95">
+              <i class="fa-solid fa-pen-to-square text-xs"></i>
+            </button>
+          </div>
+
+          <!-- COUNTDOWN / SUMMARY ROW -->
+          <div class="grid grid-cols-3 gap-2 mt-4 pt-3 border-t border-slate-200 dark:border-slate-800 text-center">
+            <div class="p-2 rounded-xl bg-slate-100/80 dark:bg-slate-800/50">
+              <span class="text-xs text-slate-500 dark:text-slate-400 block font-medium">Outbound</span>
+              <span class="text-sm font-bold text-slate-800 dark:text-slate-200 font-mono">${tripData.flights[0] ? tripData.flights[0].flightNum : 'N/A'}</span>
+            </div>
+            <div class="p-2 rounded-xl bg-slate-100/80 dark:bg-slate-800/50">
+              <span class="text-xs text-slate-500 dark:text-slate-400 block font-medium">Spent / Limit</span>
+              <span class="text-sm font-bold text-brand-600 dark:text-brand-400 font-mono">$${spent}</span>
+            </div>
+            <div class="p-2 rounded-xl bg-slate-100/80 dark:bg-slate-800/50">
+              <span class="text-xs text-slate-500 dark:text-slate-400 block font-medium">Tasks</span>
+              <span class="text-sm font-bold text-slate-800 dark:text-slate-200 font-mono">${completedTodos}/${totalTodos}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- QUICK ACTIONS & STATS -->
+        <div class="grid grid-cols-2 gap-3">
+          <div onclick="switchTab('itinerary')" class="glass-card p-3.5 rounded-2xl cursor-pointer hover:border-brand-500/40 transition active:scale-[0.98]">
+            <div class="flex items-center justify-between mb-2">
+              <div class="w-8 h-8 rounded-xl bg-indigo-500/10 text-indigo-500 flex items-center justify-center">
+                <i class="fa-solid fa-map-pin text-sm"></i>
+              </div>
+              <span class="text-xs font-mono font-bold text-slate-400">${completedItin}/${tripData.itinerary.length}</span>
+            </div>
+            <h3 class="text-xs font-bold text-slate-900 dark:text-white">Itinerary Timeline</h3>
+            <p class="text-[10px] text-slate-500 dark:text-slate-400">View daily schedule</p>
+          </div>
+
+          <div onclick="switchTab('budget')" class="glass-card p-3.5 rounded-2xl cursor-pointer hover:border-brand-500/40 transition active:scale-[0.98]">
+            <div class="flex items-center justify-between mb-2">
+              <div class="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
+                <i class="fa-solid fa-chart-line text-sm"></i>
+              </div>
+              <span class="text-xs font-mono font-bold text-slate-400">${percentSpent}%</span>
+            </div>
+            <h3 class="text-xs font-bold text-slate-900 dark:text-white">Budget Tracker</h3>
+            <p class="text-[10px] text-slate-500 dark:text-slate-400">Manage trip expenses</p>
+          </div>
+        </div>
+
+        <!-- UPCOMING FLIGHT BANNER -->
+        ${tripData.flights.length > 0 ? `
+          <div class="glass-card rounded-2xl p-4 space-y-3">
+            <div class="flex justify-between items-center border-b border-slate-200 dark:border-slate-800 pb-2">
+              <span class="text-xs font-bold text-slate-900 dark:text-white flex items-center">
+                <i class="fa-solid fa-plane text-brand-500 mr-2"></i> Next Flight Segment
+              </span>
+              <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-brand-500/20 text-brand-600 dark:text-brand-300 font-semibold">${tripData.flights[0].type}</span>
+            </div>
+            <div class="flex justify-between items-center">
+              <div>
+                <span class="text-lg font-bold font-mono text-slate-800 dark:text-slate-100">${tripData.flights[0].route.split('->')[0] || ''}</span>
+                <p class="text-[11px] text-slate-500">${tripData.flights[0].dept}</p>
+              </div>
+              <div class="flex flex-col items-center">
+                <i class="fa-solid fa-arrow-right text-slate-400 text-xs"></i>
+                <span class="text-[10px] text-slate-400 font-mono">${tripData.flights[0].flightNum}</span>
+              </div>
+              <div class="text-right">
+                <span class="text-lg font-bold font-mono text-slate-800 dark:text-slate-100">${tripData.flights[0].route.split('->')[1] || ''}</span>
+                <p class="text-[11px] text-slate-500">${tripData.flights[0].arr}</p>
+              </div>
+            </div>
+          </div>
+        ` : ''}
+
+        <!-- PENDING TO-DOS PREVIEW -->
+        <div class="glass-card rounded-2xl p-4 space-y-3">
+          <div class="flex justify-between items-center">
+            <h3 class="text-xs font-bold text-slate-900 dark:text-white flex items-center">
+              <i class="fa-solid fa-list-check text-amber-500 mr-2"></i> Priority Pre-Trip Tasks
+            </h3>
+            <button onclick="switchTab('todo')" class="text-[11px] text-brand-600 dark:text-brand-400 hover:underline">View All</button>
+          </div>
+          <div class="space-y-2">
+            ${tripData.todos.slice(0, 3).map(todo => `
+              <div onclick="toggleTodo('${todo.id}')" class="flex items-center justify-between p-2 rounded-xl bg-slate-100/70 dark:bg-slate-800/60 cursor-pointer active:scale-[0.99] transition">
+                <div class="flex items-center space-x-2.5">
+                  <i class="${todo.done ? 'fa-solid fa-circle-check text-emerald-500' : 'fa-regular fa-circle text-slate-400'} text-sm"></i>
+                  <span class="text-xs ${todo.done ? 'line-through text-slate-400' : 'text-slate-700 dark:text-slate-200'} font-medium">${todo.title}</span>
+                </div>
+                <span class="text-[9px] px-2 py-0.5 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400">${todo.category}</span>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    function renderLogisticsView() {
+      return `
+        <!-- FLIGHTS SECTION -->
+        <div class="space-y-3">
+          <div class="flex justify-between items-center">
+            <h2 class="text-sm font-bold text-slate-900 dark:text-white flex items-center">
+              <i class="fa-solid fa-plane-up text-brand-500 mr-2"></i> Flight Segments
+            </h2>
+            <button onclick="openFlightModal()" class="px-3 py-1 bg-brand-600 hover:bg-brand-500 text-white text-xs font-medium rounded-xl active:scale-95 transition flex items-center space-x-1">
+              <i class="fa-solid fa-plus text-[10px]"></i>
+              <span>Add Flight</span>
+            </button>
+          </div>
+
+          <div class="space-y-2.5">
+            ${tripData.flights.map(f => `
+              <div class="glass-card rounded-2xl p-3.5 relative border border-slate-200 dark:border-slate-800 space-y-2">
+                <div class="flex justify-between items-center">
+                  <span class="text-[10px] font-bold font-mono px-2 py-0.5 rounded bg-brand-500/15 text-brand-600 dark:text-brand-300 uppercase">${f.type}</span>
+                  <div class="flex items-center space-x-1">
+                    <button onclick="editFlight('${f.id}')" class="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"><i class="fa-solid fa-pen text-xs"></i></button>
+                    <button onclick="deleteFlight('${f.id}')" class="p-1 text-slate-400 hover:text-rose-500"><i class="fa-solid fa-trash text-xs"></i></button>
+                  </div>
+                </div>
+                <div class="flex justify-between items-center">
+                  <div>
+                    <h3 class="text-sm font-bold text-slate-900 dark:text-white">${f.airline} (${f.flightNum})</h3>
+                    <p class="text-xs text-brand-600 dark:text-brand-400 font-mono font-semibold">${f.route}</p>
+                  </div>
+                  <div class="text-right">
+                    <span class="text-[10px] text-slate-400 block font-mono">PNR: ${f.pnr}</span>
+                    <span class="text-xs text-slate-500 dark:text-slate-400">${f.gate}</span>
+                  </div>
+                </div>
+                <div class="grid grid-cols-2 gap-2 text-[11px] bg-slate-100 dark:bg-slate-800/60 p-2 rounded-xl text-slate-600 dark:text-slate-400">
+                  <div><span class="font-semibold text-slate-500">Dept:</span> ${f.dept}</div>
+                  <div><span class="font-semibold text-slate-500">Arr:</span> ${f.arr}</div>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+
+        <!-- HOTELS SECTION -->
+        <div class="space-y-3 pt-3">
+          <div class="flex justify-between items-center">
+            <h2 class="text-sm font-bold text-slate-900 dark:text-white flex items-center">
+              <i class="fa-solid fa-hotel text-brand-500 mr-2"></i> Accommodations
+            </h2>
+            <button onclick="openHotelModal()" class="px-3 py-1 bg-brand-600 hover:bg-brand-500 text-white text-xs font-medium rounded-xl active:scale-95 transition flex items-center space-x-1">
+              <i class="fa-solid fa-plus text-[10px]"></i>
+              <span>Add Hotel</span>
+            </button>
+          </div>
+
+          <div class="space-y-2.5">
+            ${tripData.hotels.map(h => `
+              <div class="glass-card rounded-2xl p-3.5 relative border border-slate-200 dark:border-slate-800 space-y-2">
+                <div class="flex justify-between items-start">
+                  <div>
+                    <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-indigo-500/15 text-indigo-600 dark:text-indigo-300 uppercase">${h.area}</span>
+                    <h3 class="text-sm font-bold text-slate-900 dark:text-white mt-1">${h.name}</h3>
+                  </div>
+                  <div class="flex items-center space-x-1">
+                    <button onclick="editHotel('${h.id}')" class="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"><i class="fa-solid fa-pen text-xs"></i></button>
+                    <button onclick="deleteHotel('${h.id}')" class="p-1 text-slate-400 hover:text-rose-500"><i class="fa-solid fa-trash text-xs"></i></button>
+                  </div>
+                </div>
+                <p class="text-xs text-slate-500 dark:text-slate-400 flex items-center">
+                  <i class="fa-solid fa-location-dot text-slate-400 mr-1.5 text-xs"></i> ${h.address}
+                </p>
+                <div class="grid grid-cols-2 gap-2 text-[11px] bg-slate-100 dark:bg-slate-800/60 p-2 rounded-xl text-slate-600 dark:text-slate-400 font-mono">
+                  <div><span class="font-semibold text-slate-500">In:</span> ${h.checkIn}</div>
+                  <div><span class="font-semibold text-slate-500">Out:</span> ${h.checkOut}</div>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    function renderItineraryView() {
+      return `
+        <div class="space-y-3">
+          <div class="flex justify-between items-center">
+            <div>
+              <h2 class="text-sm font-bold text-slate-900 dark:text-white">Day-by-Day Schedule</h2>
+              <p class="text-[10px] text-slate-500">Interactive activities timeline</p>
+            </div>
+            <button onclick="openItineraryModal()" class="px-3 py-1 bg-brand-600 hover:bg-brand-500 text-white text-xs font-medium rounded-xl active:scale-95 transition flex items-center space-x-1">
+              <i class="fa-solid fa-plus text-[10px]"></i>
+              <span>Add Event</span>
+            </button>
+          </div>
+
+          <div class="space-y-3 relative pl-3 border-l-2 border-brand-500/30 ml-2">
+            ${tripData.itinerary.map(item => `
+              <div class="relative pl-4 space-y-1">
+                <div class="absolute -left-[19px] top-1 w-3 h-3 rounded-full ${item.done ? 'bg-emerald-500 ring-4 ring-emerald-500/20' : 'bg-slate-400 dark:bg-slate-600'}"></div>
+                <div onclick="toggleItinerary('${item.id}')" class="glass-card p-3 rounded-xl border border-slate-200 dark:border-slate-800 cursor-pointer active:scale-[0.99] transition space-y-1">
+                  <div class="flex justify-between items-center">
+                    <span class="text-[10px] font-bold text-brand-600 dark:text-brand-300 font-mono">${item.day} • ${item.time}</span>
+                    <button onclick="event.stopPropagation(); deleteItinerary('${item.id}')" class="text-slate-400 hover:text-rose-500 text-xs">
+                      <i class="fa-solid fa-xmark"></i>
+                    </button>
+                  </div>
+                  <h3 class="text-xs font-bold ${item.done ? 'line-through text-slate-400' : 'text-slate-900 dark:text-white'}">${item.title}</h3>
+                  ${item.notes ? `<p class="text-[11px] text-slate-500 dark:text-slate-400">${item.notes}</p>` : ''}
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    function renderBudgetView() {
+      const totalSpent = tripData.expenses.reduce((sum, e) => sum + Number(e.amount || 0), 0);
+      const remaining = tripData.totalBudget - totalSpent;
+
+      return `
+        <div class="space-y-4">
+          <!-- BUDGET SUMMARY CARD -->
+          <div class="glass-card rounded-2xl p-4 border border-slate-200 dark:border-slate-800 space-y-3">
+            <div class="flex justify-between items-center">
+              <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Travel Budget</span>
+              <span class="text-sm font-bold font-mono text-brand-600 dark:text-brand-300">$${tripData.totalBudget}</span>
+            </div>
+            
+            <div class="grid grid-cols-2 gap-2 text-center py-2 bg-slate-100 dark:bg-slate-800/60 rounded-xl">
+              <div>
+                <span class="text-[10px] text-slate-400 block font-medium">Spent so far</span>
+                <span class="text-base font-bold text-slate-900 dark:text-white font-mono">$${totalSpent.toFixed(2)}</span>
+              </div>
+              <div>
+                <span class="text-[10px] text-slate-400 block font-medium">Remaining</span>
+                <span class="text-base font-bold ${remaining < 0 ? 'text-rose-500' : 'text-emerald-500'} font-mono">$${remaining.toFixed(2)}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- EXPENSES LIST -->
+          <div class="space-y-3">
+            <div class="flex justify-between items-center">
+              <h2 class="text-sm font-bold text-slate-900 dark:text-white">Expense Breakdown</h2>
+              <button onclick="openExpenseModal()" class="px-3 py-1 bg-brand-600 hover:bg-brand-500 text-white text-xs font-medium rounded-xl active:scale-95 transition flex items-center space-x-1">
+                <i class="fa-solid fa-plus text-[10px]"></i>
+                <span>Add Expense</span>
+              </button>
+            </div>
+
+            <div class="space-y-2">
+              ${tripData.expenses.map(e => `
+                <div class="glass-card p-3 rounded-xl flex items-center justify-between border border-slate-200 dark:border-slate-800">
+                  <div class="flex items-center space-x-3">
+                    <div class="w-8 h-8 rounded-xl bg-brand-500/10 text-brand-500 flex items-center justify-center text-xs">
+                      <i class="fa-solid fa-receipt"></i>
+                    </div>
+                    <div>
+                      <h3 class="text-xs font-bold text-slate-900 dark:text-white">${e.title}</h3>
+                      <p class="text-[10px] text-slate-500">${e.category} • ${e.date}</p>
+                    </div>
+                  </div>
+                  <div class="flex items-center space-x-2">
+                    <span class="text-xs font-bold font-mono text-slate-900 dark:text-white">$${Number(e.amount).toFixed(2)}</span>
+                    <button onclick="deleteExpense('${e.id}')" class="text-slate-400 hover:text-rose-500 p-1">
+                      <i class="fa-solid fa-trash text-xs"></i>
+                    </button>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderTodoView() {
+      const categories = ['Documents', 'Booking', 'Packing', 'Misc'];
+
+      return `
+        <div class="space-y-4">
+          <div class="flex justify-between items-center">
+            <div>
+              <h2 class="text-sm font-bold text-slate-900 dark:text-white">Checklists & Tasks</h2>
+              <p class="text-[10px] text-slate-500">Track preparation and packing</p>
+            </div>
+            <button onclick="openTodoModal()" class="px-3 py-1 bg-brand-600 hover:bg-brand-500 text-white text-xs font-medium rounded-xl active:scale-95 transition flex items-center space-x-1">
+              <i class="fa-solid fa-plus text-[10px]"></i>
+              <span>Add Task</span>
+            </button>
+          </div>
+
+          ${categories.map(cat => {
+            const items = tripData.todos.filter(t => t.category === cat);
+            if (items.length === 0) return '';
+            return `
+              <div class="glass-card rounded-2xl p-3.5 space-y-2 border border-slate-200 dark:border-slate-800">
+                <h3 class="text-xs font-bold text-brand-600 dark:text-brand-300 uppercase tracking-wider">${cat}</h3>
+                <div class="space-y-1.5">
+                  ${items.map(t => `
+                    <div class="flex items-center justify-between p-2 rounded-xl bg-slate-100/70 dark:bg-slate-800/50">
+                      <div onclick="toggleTodo('${t.id}')" class="flex items-center space-x-2.5 flex-1 cursor-pointer">
+                        <i class="${t.done ? 'fa-solid fa-circle-check text-emerald-500' : 'fa-regular fa-circle text-slate-400'} text-sm"></i>
+                        <span class="text-xs ${t.done ? 'line-through text-slate-400' : 'text-slate-800 dark:text-slate-200'}">${t.title}</span>
+                      </div>
+                      <button onclick="deleteTodo('${t.id}')" class="text-slate-400 hover:text-rose-500 p-1">
+                        <i class="fa-solid fa-trash text-xs"></i>
+                      </button>
+                    </div>
+                  `).join('')}
+                </div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      `;
+    }
+
+    function openVaultModal() {
+      document.getElementById('modal-vault-id').innerText = vaultId;
+      document.getElementById('vault-input').value = vaultId;
+      document.getElementById('vault-modal').classList.remove('hidden');
+    }
+
+    function closeVaultModal() {
+      document.getElementById('vault-modal').classList.add('hidden');
+    }
+
+    function joinVault() {
+      const code = document.getElementById('vault-input').value.trim().toUpperCase();
+      if (!code) return;
+      vaultId = code;
+      localStorage.setItem('zentravel_vault_id', vaultId);
+      document.getElementById('header-vault-id').innerText = vaultId;
+      closeVaultModal();
+      setupVaultSync();
+      showToast(`Connected to Vault: ${vaultId}`);
+    }
+
+    function generateNewVault() {
+      const randomCode = 'ZEN-' + Math.floor(1000 + Math.random() * 9000);
+      document.getElementById('vault-input').value = randomCode;
+      joinVault();
+    }
+
+    function copyVaultCode() {
+      const tempTextArea = document.createElement("textarea");
+      tempTextArea.value = vaultId;
+      document.body.appendChild(tempTextArea);
+      tempTextArea.select();
+      try {
+        document.execCommand('copy');
+        showToast("Vault code copied!");
+      } catch (err) {}
+      document.body.removeChild(tempTextArea);
+    }
+
+    function openDiagnosticsModal() {
+      document.getElementById('hud-vault-id').innerText = vaultId;
+      document.getElementById('diagnostics-modal').classList.remove('hidden');
+    }
+
+    function closeDiagnosticsModal() {
+      document.getElementById('diagnostics-modal').classList.add('hidden');
+    }
+
+    // MODAL OPENERS / CLOSERS & SAVE HANDLERS
+    function openFlightModal() { document.getElementById('flight-modal').classList.remove('hidden'); }
+    function closeFlightModal() { document.getElementById('flight-modal').classList.add('hidden'); }
+    function saveFlight(e) {
+      e.preventDefault();
+      const newFlight = {
+        id: 'f-' + Date.now(),
+        type: document.getElementById('flight-type').value,
+        airline: document.getElementById('flight-airline').value,
+        flightNum: document.getElementById('flight-num').value,
+        route: document.getElementById('flight-route').value,
+        dept: document.getElementById('flight-dept').value,
+        arr: document.getElementById('flight-arr').value,
+        pnr: document.getElementById('flight-pnr').value || 'TBD',
+        gate: document.getElementById('flight-gate').value || 'TBD'
+      };
+      tripData.flights.push(newFlight);
+      saveTripToVault();
+      closeFlightModal();
+      renderActiveTab();
+      showToast("Flight segment saved!");
+    }
+    function deleteFlight(id) {
+      tripData.flights = tripData.flights.filter(f => f.id !== id);
+      saveTripToVault();
+      renderActiveTab();
+    }
+
+    function openHotelModal() { document.getElementById('hotel-modal').classList.remove('hidden'); }
+    function closeHotelModal() { document.getElementById('hotel-modal').classList.add('hidden'); }
+    function saveHotel(e) {
+      e.preventDefault();
+      const newHotel = {
+        id: 'h-' + Date.now(),
+        name: document.getElementById('hotel-name').value,
+        area: document.getElementById('hotel-area').value || 'City',
+        pnr: document.getElementById('hotel-pnr').value || 'N/A',
+        checkIn: document.getElementById('hotel-in').value,
+        checkOut: document.getElementById('hotel-out').value,
+        address: document.getElementById('hotel-address').value
+      };
+      tripData.hotels.push(newHotel);
+      saveTripToVault();
+      closeHotelModal();
+      renderActiveTab();
+      showToast("Hotel booking saved!");
+    }
+    function deleteHotel(id) {
+      tripData.hotels = tripData.hotels.filter(h => h.id !== id);
+      saveTripToVault();
+      renderActiveTab();
+    }
+
+    function openItineraryModal() { document.getElementById('itinerary-modal').classList.remove('hidden'); }
+    function closeItineraryModal() { document.getElementById('itinerary-modal').classList.add('hidden'); }
+    function saveItineraryItem(e) {
+      e.preventDefault();
+      const item = {
+        id: 'i-' + Date.now(),
+        day: document.getElementById('itin-day').value,
+        time: document.getElementById('itin-time').value,
+        title: document.getElementById('itin-title').value,
+        notes: document.getElementById('itin-notes').value,
+        done: false
+      };
+      tripData.itinerary.push(item);
+      saveTripToVault();
+      closeItineraryModal();
+      renderActiveTab();
+      showToast("Activity added!");
+    }
+    function toggleItinerary(id) {
+      const item = tripData.itinerary.find(i => i.id === id);
+      if (item) item.done = !item.done;
+      saveTripToVault();
+      renderActiveTab();
+    }
+    function deleteItinerary(id) {
+      tripData.itinerary = tripData.itinerary.filter(i => i.id !== id);
+      saveTripToVault();
+      renderActiveTab();
+    }
+
+    function openExpenseModal() { document.getElementById('expense-modal').classList.remove('hidden'); }
+    function closeExpenseModal() { document.getElementById('expense-modal').classList.add('hidden'); }
+    function saveExpenseItem(e) {
+      e.preventDefault();
+      const item = {
+        id: 'e-' + Date.now(),
+        category: document.getElementById('exp-category').value,
+        title: document.getElementById('exp-title').value,
+        amount: parseFloat(document.getElementById('exp-amount').value) || 0,
+        date: document.getElementById('exp-date').value || 'Today'
+      };
+      tripData.expenses.push(item);
+      saveTripToVault();
+      closeExpenseModal();
+      renderActiveTab();
+      showToast("Expense added!");
+    }
+    function deleteExpense(id) {
+      tripData.expenses = tripData.expenses.filter(e => e.id !== id);
+      saveTripToVault();
+      renderActiveTab();
+    }
+
+    function openTodoModal() { document.getElementById('todo-modal').classList.remove('hidden'); }
+    function closeTodoModal() { document.getElementById('todo-modal').classList.add('hidden'); }
+    function saveTodoItem(e) {
+      e.preventDefault();
+      const item = {
+        id: 't-' + Date.now(),
+        category: document.getElementById('todo-cat').value,
+        title: document.getElementById('todo-title').value,
+        done: false
+      };
+      tripData.todos.push(item);
+      saveTripToVault();
+      closeTodoModal();
+      renderActiveTab();
+      showToast("Task created!");
+    }
+    function toggleTodo(id) {
+      const item = tripData.todos.find(t => t.id === id);
+      if (item) item.done = !item.done;
+      saveTripToVault();
+      renderActiveTab();
+    }
+    function deleteTodo(id) {
+      tripData.todos = tripData.todos.filter(t => t.id !== id);
+      saveTripToVault();
+      renderActiveTab();
+    }
+
+    function openTripEditModal() {
+      document.getElementById('trip-dest-input').value = tripData.destination;
+      document.getElementById('trip-dates-input').value = tripData.dates;
+      document.getElementById('trip-budget-input').value = tripData.totalBudget;
+      document.getElementById('trip-edit-modal').classList.remove('hidden');
+    }
+    function closeTripEditModal() { document.getElementById('trip-edit-modal').classList.add('hidden'); }
+    function saveTripOverview(e) {
+      e.preventDefault();
+      tripData.destination = document.getElementById('trip-dest-input').value;
+      tripData.dates = document.getElementById('trip-dates-input').value;
+      tripData.totalBudget = parseFloat(document.getElementById('trip-budget-input').value) || 3500;
+      saveTripToVault();
+      closeTripEditModal();
+      renderActiveTab();
+      showToast("Trip overview updated!");
+    }
+
+    function openToolsModal() { document.getElementById('tools-modal').classList.remove('hidden'); }
+    function closeToolsModal() { document.getElementById('tools-modal').classList.add('hidden'); }
+    function calculateCurrency() {
+      const amt = parseFloat(document.getElementById('calc-amount').value) || 0;
+      const rates = { USD: 154, EUR: 168, GBP: 201, SGD: 118 };
+      const from = document.getElementById('calc-from').value;
+      const res = Math.round(amt * (rates[from] || 154));
+      document.getElementById('calc-result').innerText = `¥${res.toLocaleString()}`;
+    }
+
+    function toggleTheme() {
+      const html = document.documentElement;
+      const themeIcon = document.getElementById('theme-icon');
+      if (html.classList.contains('dark')) {
+        html.classList.remove('dark');
+        themeIcon.className = 'fa-solid fa-sun text-amber-500 text-xs';
+      } else {
+        html.classList.add('dark');
+        themeIcon.className = 'fa-solid fa-moon text-xs';
+      }
+    }
+
+    function showToast(msg, type = 'success') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      toast.className = `p-3 rounded-xl text-xs font-medium shadow-lg transition-all transform duration-200 pointer-events-auto flex items-center space-x-2 ${
+        type === 'error' ? 'bg-rose-600 text-white' : 'bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 border border-slate-700'
+      }`;
+      toast.innerHTML = `<i class="fa-solid ${type === 'error' ? 'fa-triangle-exclamation' : 'fa-circle-check'}"></i> <span>${msg}</span>`;
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 300);
+      }, 2500);
+    }
+
+    // INITIALIZATION ENTRY POINT
+    window.onload = function() {
+      document.getElementById('header-vault-id').innerText = vaultId;
+      loadFromLocalStorage();
+      initFirebase();
+      renderActiveTab();
+    };
+  </script>
+</body>
+</html>

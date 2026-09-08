@@ -662,10 +662,10 @@
             collection, 
             doc, 
             onSnapshot, 
+            getDoc,
             setDoc, 
-            updateDoc, 
             deleteDoc,
-            getDocs 
+            serverTimestamp
         } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // Production Firebase Configuration
@@ -684,14 +684,18 @@
             auth: null,
             db: null,
             currentUser: null,
-            appId: typeof window.__app_id !== 'undefined' ? window.__app_id : 'zen-travel-app',
-            activeVaultId: localStorage.getItem('zentravel_active_vault') || 'ZEN-8492',
+            // Stable app ID: all browsers must use the same Firestore namespace.
+            appId: 'zen-travel-app',
+            activeVaultId: (localStorage.getItem('zentravel_active_vault') || 'ZEN-8492').trim().toUpperCase(),
             activeTripId: localStorage.getItem('zentravel_active_trip') || null,
             activeDayFilter: 'ALL',
             trips: [],
             unsubscribeListener: null,
+            authUnsubscribe: null,
             notesDebounceTimer: null,
             isOnline: navigator.onLine,
+            cloudInitializedVaults: new Set(),
+            pendingWriteIds: new Set(),
             logs: []
         };
 
@@ -778,17 +782,29 @@
 
                 updateSyncBadge('syncing', 'Connecting');
 
-                // STEP 2: Listen for Auth state change BEFORE triggering sign-in
-                onAuthStateChanged(window.ZenApp.auth, async (user) => {
-                    if (user) {
-                        window.ZenApp.currentUser = user;
-                        addLog(`Authenticated successfully (UID: ${user.uid.substring(0, 8)}...)`, 'success');
-                        subscribeToVault(window.ZenApp.activeVaultId);
-                    } else {
-                        addLog("No existing auth session. Authenticating...", 'info');
-                        await performAuthFallback();
+                // STEP 2: Listen for Auth state changes before triggering sign-in.
+                if (window.ZenApp.authUnsubscribe) {
+                    window.ZenApp.authUnsubscribe();
+                }
+
+                window.ZenApp.authUnsubscribe = onAuthStateChanged(
+                    window.ZenApp.auth,
+                    async (user) => {
+                        if (user) {
+                            window.ZenApp.currentUser = user;
+                            addLog(`Authenticated successfully (UID: ${user.uid.substring(0, 8)}...)`, 'success');
+                            subscribeToVault(window.ZenApp.activeVaultId);
+                        } else {
+                            window.ZenApp.currentUser = null;
+                            addLog("No existing auth session. Authenticating...", 'info');
+                            await performAuthFallback();
+                        }
+                    },
+                    (authError) => {
+                        addLog(`Auth state listener failed: ${authError.message}`, 'error');
+                        updateSyncBadge('offline', 'Auth Error');
                     }
-                });
+                );
 
             } catch (err) {
                 addLog(`Firebase Init Exception: ${err.message}. Operating in Local Cache Mode.`, 'error');
@@ -800,138 +816,259 @@
         async function performAuthFallback() {
             if (!window.ZenApp.auth) return;
 
-            // Attempt custom token auth if provided by environment
-            if (window.__initial_auth_token) {
-
-
-		    try {
-        		addLog("Initiating direct Anonymous Authentication...");
-       			// Directly call signInAnonymously instead of trying the custom token first
-        		await signInAnonymously(window.ZenApp.auth);
-        		addLog("Successfully authenticated anonymously!");
-        		return;
-    			} catch (authErr) {
-        addLog(`Anonymous Auth failed (${authErr.message}). Check Firebase Console settings.`, 'error');
-    }
-
-
-
+            // Use a supplied custom token when the host provides one.
+            if (typeof window.__initial_auth_token === 'string' && window.__initial_auth_token.trim()) {
+                try {
+                    addLog("Signing in with supplied custom token...");
+                    await signInWithCustomToken(window.ZenApp.auth, window.__initial_auth_token);
+                    addLog("Custom-token authentication succeeded.", 'success');
+                    return;
+                } catch (tokenErr) {
+                    addLog(`Custom-token authentication failed: ${tokenErr.message}`, 'error');
+                }
             }
 
-            // Fallback to anonymous auth
             try {
                 addLog("Signing in anonymously...");
                 await signInAnonymously(window.ZenApp.auth);
+                addLog("Anonymous authentication succeeded.", 'success');
             } catch (anonErr) {
-                addLog(`Anonymous auth failed: ${anonErr.message}. Operating offline.`, 'error');
-                updateSyncBadge('offline', 'Offline Mode');
+                addLog(`Anonymous authentication failed: ${anonErr.message}. Check Firebase Authentication > Sign-in method.`, 'error');
+                updateSyncBadge('offline', 'Auth Failed');
+            }
+        }
+
+        // --- FIRESTORE PATH HELPERS ---
+        function getTripsCollectionRef() {
+            if (!window.ZenApp.db) throw new Error('Firestore is not initialized.');
+            return collection(
+                window.ZenApp.db,
+                'artifacts',
+                window.ZenApp.appId,
+                'public',
+                'data',
+                'zen_trips'
+            );
+        }
+
+        function getTripDocRef(tripId) {
+            return doc(getTripsCollectionRef(), tripId);
+        }
+
+        function getVaultTripsFromSnapshot(snapshot, vaultId) {
+            const trips = [];
+            snapshot.forEach((docSnap) => {
+                const data = docSnap.data();
+                if (data && String(data.vaultId || '').trim().toUpperCase() === vaultId) {
+                    trips.push({ ...data, id: docSnap.id });
+                }
+            });
+            return trips;
+        }
+
+        function getCachedVaultTrips(vaultId) {
+            const cached = localStorage.getItem(`zentravel_cache_${vaultId}`);
+            if (!cached) return [];
+            try {
+                const parsed = JSON.parse(cached);
+                return Array.isArray(parsed) ? parsed : [];
+            } catch (e) {
+                addLog(`Failed to parse local cache for ${vaultId}.`, 'error');
+                return [];
+            }
+        }
+
+        function saveVaultToLocalCache(vaultId, trips) {
+            try {
+                localStorage.setItem(`zentravel_cache_${vaultId}`, JSON.stringify(trips));
+            } catch (err) {
+                addLog(`Local cache save failed: ${err.message}`, 'error');
             }
         }
 
         // --- REAL-TIME VAULT SUBSCRIPTION ---
         function subscribeToVault(vaultId) {
+            vaultId = String(vaultId || '').trim().toUpperCase();
+            if (!vaultId) return;
+
+            if (!window.ZenApp.db || !window.ZenApp.currentUser) {
+                addLog(`Cannot subscribe to ${vaultId}: Firebase/auth is not ready.`, 'error');
+                loadVaultFromLocalCache(vaultId);
+                return;
+            }
+
             if (window.ZenApp.unsubscribeListener) {
                 addLog(`Unsubscribing previous Vault listener...`);
                 window.ZenApp.unsubscribeListener();
                 window.ZenApp.unsubscribeListener = null;
             }
 
+            window.ZenApp.activeVaultId = vaultId;
+            localStorage.setItem('zentravel_active_vault', vaultId);
+            window.ZenApp.cloudInitializedVaults.delete(vaultId);
+
             addLog(`Connecting real-time sync for Vault: ${vaultId}...`);
             document.getElementById('currentVaultDisplay').textContent = vaultId;
             document.getElementById('logConsoleVault').textContent = vaultId;
-
-            // Collection path
-            const tripsRef = collection(window.ZenApp.db, 'artifacts', window.ZenApp.appId, 'public', 'data', 'zen_trips');
-
             updateSyncBadge('syncing', 'Syncing...');
 
+            let tripsRef;
             try {
-                window.ZenApp.unsubscribeListener = onSnapshot(tripsRef, (snapshot) => {
-                    addLog(`Received cloud snapshot with ${snapshot.size} entries.`, 'success');
-                    let vaultTrips = [];
+                tripsRef = getTripsCollectionRef();
 
-                    snapshot.forEach(docSnap => {
-                        const data = docSnap.data();
-                        if (data && data.vaultId === vaultId) {
-                            vaultTrips.push({ ...data, id: docSnap.id });
+                window.ZenApp.unsubscribeListener = onSnapshot(
+                    tripsRef,
+                    { includeMetadataChanges: true },
+                    async (snapshot) => {
+                        const vaultTrips = getVaultTripsFromSnapshot(snapshot, vaultId);
+                        const isInitialServerSnapshot =
+                            !window.ZenApp.cloudInitializedVaults.has(vaultId) &&
+                            !snapshot.metadata.fromCache &&
+                            !snapshot.metadata.hasPendingWrites;
+
+                        addLog(
+                            `Cloud snapshot: ${snapshot.size} total, ${vaultTrips.length} in ${vaultId}. ` +
+                            `[cache=${snapshot.metadata.fromCache}, pending=${snapshot.metadata.hasPendingWrites}]`,
+                            'success'
+                        );
+
+                        if (isInitialServerSnapshot) {
+                            window.ZenApp.cloudInitializedVaults.add(vaultId);
+                            const localTrips = getCachedVaultTrips(vaultId).filter(t => t && t.id && t.vaultId);
+
+                            if (vaultTrips.length > 0) {
+                                // Firestore is authoritative when data already exists in the cloud.
+                                window.ZenApp.trips = vaultTrips;
+                                addLog(`Loaded ${vaultTrips.length} trip(s) from Firestore.`, 'success');
+                            } else if (localTrips.length > 0) {
+                                // Recover local-only changes rather than replacing them with a fresh seed.
+                                window.ZenApp.trips = localTrips;
+                                addLog(`Cloud vault is empty; recovering ${localTrips.length} cached trip(s) to Firestore.`, 'info');
+
+                                for (const localTrip of localTrips) {
+                                    try {
+                                        await setDoc(getTripDocRef(localTrip.id), {
+                                            ...localTrip,
+                                            vaultId,
+                                            updatedAt: Date.now(),
+                                            serverUpdatedAt: serverTimestamp()
+                                        });
+                                    } catch (err) {
+                                        addLog(`Failed to recover ${localTrip.id}: ${err.message}`, 'error');
+                                    }
+                                }
+                            } else if (vaultId === 'ZEN-8492') {
+                                addLog("Vault ZEN-8492 is empty; seeding default trip...", 'info');
+                                await seedDefaultTrip();
+                                return;
+                            } else {
+                                window.ZenApp.trips = [];
+                            }
+                        } else if (vaultTrips.length > 0) {
+                            // Don't let a local pending write get replaced by its pre-write snapshot.
+                            window.ZenApp.trips = vaultTrips.map(cloudTrip => {
+                                if (window.ZenApp.pendingWriteIds.has(cloudTrip.id)) {
+                                    return window.ZenApp.trips.find(t => t.id === cloudTrip.id) || cloudTrip;
+                                }
+                                return cloudTrip;
+                            });
+                        } else if (window.ZenApp.cloudInitializedVaults.has(vaultId)) {
+                            window.ZenApp.trips = [];
                         }
-                    });
 
-                    // Seed default vault if empty in cloud
-                    if (vaultTrips.length === 0 && vaultId === 'ZEN-8492') {
-                        addLog("Vault ZEN-8492 is empty on cloud. Seeding default trip...", 'info');
-                        seedDefaultTrip();
-                        return;
-                    }
+                        saveVaultToLocalCache(vaultId, window.ZenApp.trips);
 
-                    if (vaultTrips.length > 0) {
-                        window.ZenApp.trips = vaultTrips;
-                        saveVaultToLocalCache(vaultId, vaultTrips);
-                    }
-
-                    if (!window.ZenApp.activeTripId || !window.ZenApp.trips.some(t => t.id === window.ZenApp.activeTripId)) {
-                        window.ZenApp.activeTripId = window.ZenApp.trips[0]?.id || null;
-                        if (window.ZenApp.activeTripId) {
-                            localStorage.setItem('zentravel_active_trip', window.ZenApp.activeTripId);
+                        if (!window.ZenApp.activeTripId ||
+                            !window.ZenApp.trips.some(t => t.id === window.ZenApp.activeTripId)) {
+                            window.ZenApp.activeTripId = window.ZenApp.trips[0]?.id || null;
+                            localStorage.setItem('zentravel_active_trip', window.ZenApp.activeTripId || '');
                         }
+
+                        updateSyncBadge(
+                            snapshot.metadata.hasPendingWrites ? 'syncing' : 'online',
+                            snapshot.metadata.hasPendingWrites ? 'Saving...' : 'Live Synced'
+                        );
+                        renderApp();
+                    },
+                    (error) => {
+                        addLog(`Snapshot listener failed: ${error.code || 'unknown'} - ${error.message}`, 'error');
+                        updateSyncBadge('offline', 'Sync Error');
+                        loadVaultFromLocalCache(vaultId);
                     }
-
-                    updateSyncBadge('online', 'Live Synced');
-                    renderApp();
-
-                }, (error) => {
-                    addLog(`Snapshot Listener Warning: ${error.message}. Using local storage data.`, 'error');
-                    updateSyncBadge('offline', 'Offline Mode');
-                    loadVaultFromLocalCache(vaultId);
-                });
-
+                );
             } catch (err) {
                 addLog(`Subscription setup failed: ${err.message}`, 'error');
-                updateSyncBadge('offline', 'Offline Mode');
+                updateSyncBadge('offline', 'Sync Error');
                 loadVaultFromLocalCache(vaultId);
             }
         }
 
         // --- SEED DEFAULT VAULT DATA ---
         async function seedDefaultTrip() {
+            if (!window.ZenApp.db || !window.ZenApp.currentUser) return false;
+
+            const seededTrip = {
+                ...DEFAULT_SEED_TRIP,
+                vaultId: 'ZEN-8492',
+                updatedAt: Date.now(),
+                serverUpdatedAt: serverTimestamp()
+            };
+
             try {
-                const docRef = doc(window.ZenApp.db, 'artifacts', window.ZenApp.appId, 'public', 'data', 'zen_trips', DEFAULT_SEED_TRIP.id);
-                await setDoc(docRef, DEFAULT_SEED_TRIP);
+                await setDoc(getTripDocRef(seededTrip.id), seededTrip);
                 addLog("Successfully seeded default trip for ZEN-8492!", 'success');
+                return true;
             } catch (err) {
-                addLog(`Error seeding trip: ${err.message}`, 'error');
+                addLog(`Error seeding trip: ${err.code || 'unknown'} - ${err.message}`, 'error');
+                return false;
             }
         }
 
         // --- FIRESTORE PERSISTENCE HELPER ---
         async function saveActiveTripToCloud(trip) {
             if (!trip || !trip.id) return;
+
+            const vaultId = window.ZenApp.activeVaultId;
+            trip.vaultId = vaultId;
             trip.updatedAt = Date.now();
 
-            saveVaultToLocalCache(window.ZenApp.activeVaultId, window.ZenApp.trips);
+            saveVaultToLocalCache(vaultId, window.ZenApp.trips);
             renderApp();
 
             if (!window.ZenApp.db || !window.ZenApp.currentUser) {
-                addLog("Saved to local storage (Offline mode).", 'info');
+                addLog("Saved locally, but Firebase is not connected/authenticated.", 'error');
+                updateSyncBadge('offline', 'Not Synced');
                 return;
             }
 
+            const tripId = trip.id;
+            window.ZenApp.pendingWriteIds.add(tripId);
+            updateSyncBadge('syncing', 'Saving...');
+
             try {
-                updateSyncBadge('syncing', 'Saving...');
-                const docRef = doc(window.ZenApp.db, 'artifacts', window.ZenApp.appId, 'public', 'data', 'zen_trips', trip.id);
-                await setDoc(docRef, trip);
-                addLog(`Trip "${trip.title}" synced to cloud.`, 'success');
+                await setDoc(getTripDocRef(tripId), {
+                    ...trip,
+                    vaultId,
+                    updatedAt: trip.updatedAt,
+                    serverUpdatedAt: serverTimestamp()
+                });
+
+                window.ZenApp.pendingWriteIds.delete(tripId);
+                addLog(`Trip "${trip.title}" synced to Firestore.`, 'success');
                 updateSyncBadge('online', 'Live Synced');
             } catch (err) {
-                addLog(`Failed to sync trip to cloud: ${err.message}`, 'error');
-                updateSyncBadge('offline', 'Offline Mode');
+                window.ZenApp.pendingWriteIds.delete(tripId);
+                addLog(`Failed to sync trip "${trip.title}": ${err.code || 'unknown'} - ${err.message}`, 'error');
+                updateSyncBadge('offline', 'Sync Failed');
             }
         }
 
         async function deleteTripFromCloud(tripId) {
             if (!tripId) return;
 
+            const trip = window.ZenApp.trips.find(t => t.id === tripId);
             window.ZenApp.trips = window.ZenApp.trips.filter(t => t.id !== tripId);
+
             if (window.ZenApp.activeTripId === tripId) {
                 window.ZenApp.activeTripId = window.ZenApp.trips[0]?.id || null;
                 localStorage.setItem('zentravel_active_trip', window.ZenApp.activeTripId || '');
@@ -940,45 +1077,48 @@
             saveVaultToLocalCache(window.ZenApp.activeVaultId, window.ZenApp.trips);
             renderApp();
 
-            if (window.ZenApp.db && window.ZenApp.currentUser) {
-                try {
-                    const docRef = doc(window.ZenApp.db, 'artifacts', window.ZenApp.appId, 'public', 'data', 'zen_trips', tripId);
-                    await deleteDoc(docRef);
-                    addLog(`Trip deleted from cloud: ${tripId}`, 'success');
-                } catch (err) {
-                    addLog(`Error deleting trip from cloud: ${err.message}`, 'error');
-                }
+            if (!window.ZenApp.db || !window.ZenApp.currentUser) {
+                addLog(`Deleted "${trip?.title || tripId}" locally; Firebase is not connected/authenticated.`, 'error');
+                updateSyncBadge('offline', 'Not Synced');
+                return;
             }
-        }
 
-        // --- LOCAL STORAGE CACHE HELPERS ---
-        function saveVaultToLocalCache(vaultId, trips) {
-            localStorage.setItem(`zentravel_cache_${vaultId}`, JSON.stringify(trips));
+            try {
+                await deleteDoc(getTripDocRef(tripId));
+                addLog(`Trip deleted from Firestore: ${tripId}`, 'success');
+            } catch (err) {
+                addLog(`Error deleting trip from Firestore: ${err.code || 'unknown'} - ${err.message}`, 'error');
+                updateSyncBadge('offline', 'Delete Failed');
+            }
         }
 
         function loadVaultFromLocalCache(vaultId) {
-            const cached = localStorage.getItem(`zentravel_cache_${vaultId}`);
-            if (cached) {
-                try {
-                    window.ZenApp.trips = JSON.parse(cached);
-                    if (!window.ZenApp.activeTripId || !window.ZenApp.trips.some(t => t.id === window.ZenApp.activeTripId)) {
-                        window.ZenApp.activeTripId = window.ZenApp.trips[0]?.id || null;
-                    }
-                    addLog(`Loaded ${window.ZenApp.trips.length} trip(s) from local cache.`, 'info');
-                    renderApp();
-                    return;
-                } catch (e) {
-                    addLog("Failed to parse local cache.", 'error');
+            const cachedTrips = getCachedVaultTrips(vaultId);
+
+            if (cachedTrips.length > 0) {
+                window.ZenApp.trips = cachedTrips;
+                if (!window.ZenApp.activeTripId ||
+                    !window.ZenApp.trips.some(t => t.id === window.ZenApp.activeTripId)) {
+                    window.ZenApp.activeTripId = window.ZenApp.trips[0]?.id || null;
+                    localStorage.setItem('zentravel_active_trip', window.ZenApp.activeTripId || '');
                 }
+                addLog(`Loaded ${window.ZenApp.trips.length} trip(s) from local cache for ${vaultId}.`, 'info');
+                renderApp();
+                return true;
             }
-            
-            // Initial seed if cache is empty
+
             if (vaultId === 'ZEN-8492') {
                 window.ZenApp.trips = [DEFAULT_SEED_TRIP];
                 window.ZenApp.activeTripId = DEFAULT_SEED_TRIP.id;
                 saveVaultToLocalCache(vaultId, window.ZenApp.trips);
                 renderApp();
+                return true;
             }
+
+            window.ZenApp.trips = [];
+            window.ZenApp.activeTripId = null;
+            renderApp();
+            return false;
         }
 
         // --- LATENCY PING TEST ---
@@ -990,7 +1130,7 @@
 
             const startTime = Date.now();
             const pingDocId = `ping_${window.ZenApp.currentUser.uid}`;
-            const docRef = doc(window.ZenApp.db, 'artifacts', window.ZenApp.appId, 'public', 'data', 'zen_trips', pingDocId);
+            const docRef = getTripDocRef(pingDocId);
 
             addLog("Testing Firestore connection latency...");
 
@@ -1012,7 +1152,9 @@
         window.addEventListener('online', () => {
             addLog("Network reconnected. Re-establishing cloud sync...", 'success');
             window.ZenApp.isOnline = true;
-            if (window.ZenApp.activeVaultId) subscribeToVault(window.ZenApp.activeVaultId);
+            if (window.ZenApp.activeVaultId && window.ZenApp.currentUser) {
+                subscribeToVault(window.ZenApp.activeVaultId);
+            }
         });
 
         window.addEventListener('offline', () => {
@@ -1409,14 +1551,24 @@
 
         window.switchVaultFromInput = function() {
             const inputKey = document.getElementById('vaultKeyInput').value.trim().toUpperCase();
-            if (!inputKey) return;
+            if (!/^ZEN-[A-Z0-9]{4,}$/.test(inputKey)) {
+                addLog(`Invalid Vault Key "${inputKey}". Expected format such as ZEN-8492.`, 'error');
+                return;
+            }
 
             window.ZenApp.activeVaultId = inputKey;
             localStorage.setItem('zentravel_active_vault', inputKey);
             window.ZenApp.activeTripId = null;
+            localStorage.removeItem('zentravel_active_trip');
 
             closeVaultModal();
-            subscribeToVault(inputKey);
+
+            if (window.ZenApp.db && window.ZenApp.currentUser) {
+                subscribeToVault(inputKey);
+            } else {
+                loadVaultFromLocalCache(inputKey);
+                updateSyncBadge('offline', 'Not Connected');
+            }
         };
 
         window.copyVaultKey = function() {
@@ -1440,6 +1592,7 @@
         // Trip Selection & Management
         window.onTripSelected = function(tripId) {
             if (!tripId) return;
+            if (!window.ZenApp.trips.some(t => t.id === tripId)) return;
             window.ZenApp.activeTripId = tripId;
             localStorage.setItem('zentravel_active_trip', tripId);
             renderApp();
@@ -1776,10 +1929,12 @@
             indicator.innerHTML = `<i class="fa-solid fa-spinner animate-spin text-amber-400"></i> <span>Saving...</span>`;
 
             clearTimeout(window.ZenApp.notesDebounceTimer);
-            window.ZenApp.notesDebounceTimer = setTimeout(() => {
+            window.ZenApp.notesDebounceTimer = setTimeout(async () => {
                 trip.notes = text;
-                saveActiveTripToCloud(trip);
-                indicator.innerHTML = `<i class="fa-solid fa-cloud text-brand-400"></i> <span>Synced</span>`;
+                await saveActiveTripToCloud(trip);
+                indicator.innerHTML = window.ZenApp.pendingWriteIds.has(trip.id)
+                    ? `<i class="fa-solid fa-spinner animate-spin text-amber-400"></i> <span>Saving...</span>`
+                    : `<i class="fa-solid fa-cloud text-brand-400"></i> <span>Synced</span>`;
             }, 600);
         };
 

@@ -115,7 +115,7 @@
         </button>
 
         <!-- Vault Sync Button -->
-        <button id="vault-badge-btn" onclick="openVaultModal()" class="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-full bg-slate-200/80 dark:bg-slate-800/90 hover:bg-slate-300 dark:hover:bg-slate-700/80 border border-slate-300 dark:border-slate-700 transition active:scale-[0.96] tap-highlight-none">
+        <button id="vault-badge-btn" onclick="openVaultModal()" class="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-full bg-slate-200/80 dark:bg-slate-800/90 hover:bg-slate-300 dark:hover:bg-slate-700/80 border border-slate-300 dark:border-slate-700 transition active:scale-[0.96] tap-highlight-none" title="Cloud Sync Vault Code">
           <span id="sync-indicator" class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
           <span class="text-xs font-mono text-slate-700 dark:text-slate-300 font-semibold" id="header-vault-id">ZEN-8492</span>
           <i class="fa-solid fa-arrows-rotate text-[10px] text-slate-500 dark:text-slate-400"></i>
@@ -186,8 +186,11 @@
         <p class="text-[11px] text-slate-500 dark:text-slate-400 uppercase tracking-wider font-semibold mb-1">Active Cloud Vault</p>
         <div class="flex items-center justify-center space-x-2">
           <span id="modal-vault-id" class="text-xl font-mono font-bold text-brand-600 dark:text-brand-300 tracking-wider">ZEN-8492</span>
-          <button onclick="copyVaultCode()" class="p-1.5 rounded-lg bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 active:scale-95 transition" title="Copy Code">
+          <button onclick="copyVaultCode()" class="p-1.5 rounded-lg bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 active:scale-95 transition" title="Copy Vault Code">
             <i class="fa-regular fa-copy text-xs"></i>
+          </button>
+          <button onclick="copySyncUrl()" class="p-1.5 rounded-lg bg-brand-600 hover:bg-brand-500 text-white active:scale-95 transition" title="Share Device Link">
+            <i class="fa-solid fa-share-nodes text-xs"></i>
           </button>
         </div>
       </div>
@@ -200,7 +203,7 @@
             Join
           </button>
         </div>
-        <p class="text-[11px] text-slate-500 dark:text-slate-400 leading-tight">Entering an existing Vault Code connects all synced trip plans, flights, itineraries, and expenses instantaneously across any browser session.</p>
+        <p class="text-[11px] text-slate-500 dark:text-slate-400 leading-tight">Entering the same Vault Code on your phone and laptop pairs them instantly. Any changes will sync live in real-time.</p>
       </div>
 
       <div class="mt-4 pt-3 border-t border-slate-200 dark:border-slate-800 flex justify-between items-center">
@@ -630,16 +633,30 @@
       appId: "1:730995974564:web:0a30fb7fad38ad962aa131"
     };
 
+    // Helper: extract URL query parameter ?vault=ZEN-XXXX for auto device sync
+    function getUrlVaultParam() {
+      try {
+        const params = new URLSearchParams(window.location.search);
+        return params.get('vault') || params.get('v');
+      } catch(e) {
+        return null;
+      }
+    }
+
     // Global State Variables
     let activeTab = 'dashboard';
-    let vaultId = localStorage.getItem('zentravel_vault_id') || 'ZEN-8492';
+    let urlVault = getUrlVaultParam();
+    let vaultId = urlVault ? urlVault.toUpperCase() : (localStorage.getItem('zentravel_vault_id') || 'ZEN-8492');
+    if (urlVault) {
+      localStorage.setItem('zentravel_vault_id', vaultId);
+    }
+
     let db = null;
     let auth = null;
     let currentUser = null;
     let unsubscribeVaultListener = null;
 
     // Exchange Rates Table (Base: USD = 1.0)
-    // Default Home Currency: SGD (1 USD = 1.34 SGD, 1 SGD = 0.746 USD)
     const exchangeRatesToUSD = {
       USD: 1.0,
       SGD: 1.34,
@@ -652,7 +669,7 @@
       THB: 36.50
     };
 
-    // Updated Sample Data: Orlando & New York Trip with Home Currency = SGD
+    // Default Sample Data: Orlando & New York Trip with Home Currency = SGD
     let tripData = {
       destination: "Orlando & New York, USA",
       dates: "Nov 10 - Nov 24, 2026",
@@ -740,7 +757,7 @@
       ]
     };
 
-    // Strictly adheres to Firestore Rule 1: /artifacts/{appId}/public/data/vaults/{vaultId}
+    // Strictly adheres to Firestore Path: /artifacts/{appId}/public/data/vaults/{vaultId}
     function getVaultDocRef(vId) {
       if (!db) return null;
       return db.collection('artifacts').doc(appId).collection('public').doc('data').collection('vaults').doc(vId);
@@ -768,7 +785,7 @@
 
         logDiagnostic("[FIREBASE] Initialized with API Key: " + finalConfig.apiKey.substring(0, 8) + "...");
 
-        // RULE 3: Authenticate FIRST before listening/saving
+        // Authenticate FIRST before listening/saving
         const initialToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
         if (initialToken) {
           auth.signInWithCustomToken(initialToken).catch(() => auth.signInAnonymously());
@@ -792,8 +809,7 @@
                     if (userVault !== vaultId) {
                       vaultId = userVault;
                       localStorage.setItem('zentravel_vault_id', vaultId);
-                      document.getElementById('header-vault-id').innerText = vaultId;
-                      document.getElementById('modal-vault-id').innerText = vaultId;
+                      updateHeaderVaultBadge();
                     }
                   } else {
                     userRef.set({
@@ -827,7 +843,15 @@
       }
     }
 
-    // Optimized multi-browser & multi-session real-time subscription
+    function updateHeaderVaultBadge() {
+      const headerEl = document.getElementById('header-vault-id');
+      const modalEl = document.getElementById('modal-vault-id');
+      const hudEl = document.getElementById('hud-vault-id');
+      if (headerEl) headerEl.innerText = vaultId;
+      if (modalEl) modalEl.innerText = vaultId;
+      if (hudEl) hudEl.innerText = vaultId;
+    }
+
     function setupVaultSync() {
       if (!db || !currentUser) return;
 
@@ -836,6 +860,7 @@
         unsubscribeVaultListener = null;
       }
 
+      updateHeaderVaultBadge();
       const docRef = getVaultDocRef(vaultId);
       if (!docRef) return;
 
@@ -846,17 +871,18 @@
       const syncIndicator = document.getElementById('sync-indicator');
       if (syncIndicator) syncIndicator.className = "w-2 h-2 rounded-full bg-amber-400 animate-pulse";
       
-      logDiagnostic(`[SYNC] Listening to path: ${pathStr}`);
+      logDiagnostic(`[SYNC] Listening to cloud vault path: ${pathStr}`);
 
-      // Mandatory error callback in onSnapshot
+      // Multi-device realtime synchronization listener
       unsubscribeVaultListener = docRef.onSnapshot((docSnap) => {
         if (docSnap.exists) {
           const remoteData = docSnap.data();
           if (remoteData && remoteData.tripData) {
+            // Update local memory and re-render across devices
             tripData = remoteData.tripData;
             saveToLocalStorage();
             renderActiveTab();
-            logDiagnostic(`[SYNC] Real-time data updated for Vault: ${vaultId}`);
+            logDiagnostic(`[SYNC] Realtime update applied for Vault: ${vaultId}`);
           }
         } else {
           logDiagnostic(`[SYNC] Vault ${vaultId} missing on cloud. Seeding current trip data...`);
@@ -877,6 +903,9 @@
       const docRef = getVaultDocRef(vaultId);
       if (!docRef) return;
 
+      const syncIndicator = document.getElementById('sync-indicator');
+      if (syncIndicator) syncIndicator.className = "w-2 h-2 rounded-full bg-amber-400 animate-pulse";
+
       docRef.set({
         tripData: tripData,
         lastUpdated: firebase.firestore.FieldValue.serverTimestamp(),
@@ -884,10 +913,12 @@
         updatedByEmail: currentUser.email || 'Anonymous'
       }, { merge: true })
       .then(() => {
-        logDiagnostic(`[SAVE] Vault ${vaultId} saved to cloud`);
+        logDiagnostic(`[SAVE] Vault ${vaultId} successfully written to cloud`);
+        if (syncIndicator) syncIndicator.className = "w-2 h-2 rounded-full bg-emerald-500";
       })
       .catch((err) => {
         logDiagnostic(`[SAVE ERROR] Vault ${vaultId}: ${err.message}`);
+        if (syncIndicator) syncIndicator.className = "w-2 h-2 rounded-full bg-rose-500";
       });
 
       if (currentUser && !currentUser.isAnonymous) {
@@ -915,6 +946,56 @@
           tripData = JSON.parse(saved);
         }
       } catch(e) {}
+    }
+
+    function joinVault() {
+      const input = document.getElementById('vault-input');
+      if (!input || !input.value.trim()) {
+        showToast("Please enter a valid Vault Code", "error");
+        return;
+      }
+      const newCode = input.value.trim().toUpperCase();
+      vaultId = newCode;
+      localStorage.setItem('zentravel_vault_id', vaultId);
+      updateHeaderVaultBadge();
+      setupVaultSync();
+      closeVaultModal();
+      showToast(`Joined Cloud Vault: ${vaultId}`);
+    }
+
+    function generateNewVault() {
+      const randomCode = 'ZEN-' + Math.floor(1000 + Math.random() * 9000);
+      vaultId = randomCode;
+      localStorage.setItem('zentravel_vault_id', vaultId);
+      updateHeaderVaultBadge();
+      saveTripToVault();
+      setupVaultSync();
+      closeVaultModal();
+      showToast(`Created New Vault: ${vaultId}`);
+    }
+
+    function copyVaultCode() {
+      copyToClipboard(vaultId, "Vault Code copied to clipboard!");
+    }
+
+    function copySyncUrl() {
+      const baseUrl = window.location.href.split('?')[0];
+      const shareUrl = `${baseUrl}?vault=${vaultId}`;
+      copyToClipboard(shareUrl, "Device Sync Link copied! Open on phone to pair.");
+    }
+
+    function copyToClipboard(text, successMsg) {
+      const tempTextArea = document.createElement("textarea");
+      tempTextArea.value = text;
+      document.body.appendChild(tempTextArea);
+      tempTextArea.select();
+      try {
+        document.execCommand('copy');
+        showToast(successMsg);
+      } catch (err) {
+        showToast("Failed to copy to clipboard", "error");
+      }
+      document.body.removeChild(tempTextArea);
     }
 
     function signInWithGoogle() {
@@ -1008,22 +1089,24 @@
     function copyDiagnosticLogs() {
       const logsEl = document.getElementById('diagnostic-logs');
       const text = logsEl.innerText || logsEl.textContent;
-      const tempTextArea = document.createElement("textarea");
-      tempTextArea.value = text;
-      document.body.appendChild(tempTextArea);
-      tempTextArea.select();
-      try {
-        document.execCommand('copy');
-        showToast("Diagnostic logs copied to clipboard!");
-      } catch (err) {
-        showToast("Failed to copy logs", "error");
-      }
-      document.body.removeChild(tempTextArea);
+      copyToClipboard(text, "Diagnostic logs copied to clipboard!");
     }
 
     function clearDiagnosticLogs() {
       const logsEl = document.getElementById('diagnostic-logs');
       if (logsEl) logsEl.innerHTML = '';
+    }
+
+    function toggleTheme() {
+      const htmlEl = document.documentElement;
+      const themeIcon = document.getElementById('theme-icon');
+      if (htmlEl.classList.contains('dark')) {
+        htmlEl.classList.remove('dark');
+        if (themeIcon) themeIcon.className = 'fa-solid fa-sun text-xs text-amber-500';
+      } else {
+        htmlEl.classList.add('dark');
+        if (themeIcon) themeIcon.className = 'fa-solid fa-moon text-xs';
+      }
     }
 
     function switchTab(tab) {
@@ -1297,7 +1380,7 @@
     function renderBudgetView() {
       const totalSpentSGD = tripData.expenses.reduce((sum, e) => sum + Number(e.amount || 0), 0);
       const remainingSGD = tripData.totalBudget - totalSpentSGD;
-      const usdRate = exchangeRatesToUSD['SGD']; // 1 USD = 1.34 SGD
+      const usdRate = exchangeRatesToUSD['SGD'];
       const totalSpentUSD = totalSpentSGD / usdRate;
 
       return `
@@ -1419,14 +1502,11 @@
       const fromCurr = fromSelect.value;
       const toCurr = toSelect.value;
 
-      // Rate in USD base
       const fromRateUSD = exchangeRatesToUSD[fromCurr] || 1.0;
       const toRateUSD = exchangeRatesToUSD[toCurr] || 1.0;
 
-      // Conversion logic: (Amount / FromRateInUSD) * ToRateInUSD
       const amountInUSD = amount / fromRateUSD;
       const converted = amountInUSD * toRateUSD;
-
       const singleUnitConverted = (1 / fromRateUSD) * toRateUSD;
 
       const symbols = {
@@ -1453,6 +1533,42 @@
       showToast("Currency pair swapped!");
     }
 
+    function openVaultModal() { document.getElementById('vault-modal').classList.remove('hidden'); }
+    function closeVaultModal() { document.getElementById('vault-modal').classList.add('hidden'); }
+
+    function openDiagnosticsModal() { document.getElementById('diagnostics-modal').classList.remove('hidden'); }
+    function closeDiagnosticsModal() { document.getElementById('diagnostics-modal').classList.add('hidden'); }
+
+    function openToolsModal() {
+      document.getElementById('tools-modal').classList.remove('hidden');
+      calculateCurrency();
+    }
+    function closeToolsModal() { document.getElementById('tools-modal').classList.add('hidden'); }
+
+    function openFlightModal() { document.getElementById('flight-modal').classList.remove('hidden'); }
+    function closeFlightModal() { document.getElementById('flight-modal').classList.add('hidden'); }
+
+    function openHotelModal() { document.getElementById('hotel-modal').classList.remove('hidden'); }
+    function closeHotelModal() { document.getElementById('hotel-modal').classList.add('hidden'); }
+
+    function openItineraryModal() { document.getElementById('itinerary-modal').classList.remove('hidden'); }
+    function closeItineraryModal() { document.getElementById('itinerary-modal').classList.add('hidden'); }
+
+    function openTripEditModal() {
+      document.getElementById('trip-dest-input').value = tripData.destination;
+      document.getElementById('trip-dates-input').value = tripData.dates;
+      document.getElementById('trip-budget-input').value = tripData.totalBudget;
+      document.getElementById('trip-edit-modal').classList.remove('hidden');
+    }
+    function closeTripEditModal() { document.getElementById('trip-edit-modal').classList.add('hidden'); }
+
+    function openExpenseModal() { document.getElementById('expense-modal').classList.remove('hidden'); }
+    function closeExpenseModal() { document.getElementById('expense-modal').classList.add('hidden'); }
+
+    function openTodoModal() { document.getElementById('todo-modal').classList.remove('hidden'); }
+    function closeTodoModal() { document.getElementById('todo-modal').classList.add('hidden'); }
+
+    // DATA SAVING & DELETION ACTIONS WITH REALTIME CLOUD SYNC
     function saveFlight(e) {
       e.preventDefault();
       const newFlight = {
@@ -1495,14 +1611,14 @@
       saveTripToVault();
       closeHotelModal();
       renderActiveTab();
-      showToast("Hotel booking saved!");
+      showToast("Accommodation saved!");
     }
 
     function deleteHotel(id) {
       tripData.hotels = tripData.hotels.filter(h => h.id !== id);
       saveTripToVault();
       renderActiveTab();
-      showToast("Accommodation removed");
+      showToast("Hotel removed");
     }
 
     function saveItineraryItem(e) {
@@ -1519,7 +1635,7 @@
       saveTripToVault();
       closeItineraryModal();
       renderActiveTab();
-      showToast("Activity added!");
+      showToast("Itinerary activity added!");
     }
 
     function toggleItinerary(id) {
@@ -1535,7 +1651,7 @@
       tripData.itinerary = tripData.itinerary.filter(i => i.id !== id);
       saveTripToVault();
       renderActiveTab();
-      showToast("Event removed");
+      showToast("Activity removed");
     }
 
     function saveTripOverview(e) {
@@ -1562,7 +1678,7 @@
       saveTripToVault();
       closeExpenseModal();
       renderActiveTab();
-      showToast("Expense recorded!");
+      showToast("Expense added!");
     }
 
     function deleteExpense(id) {
@@ -1600,147 +1716,49 @@
       tripData.todos = tripData.todos.filter(t => t.id !== id);
       saveTripToVault();
       renderActiveTab();
-      showToast("Task deleted");
+      showToast("Task removed");
     }
 
-    // Modal Control Helpers
-    function openVaultModal() {
-      document.getElementById('modal-vault-id').innerText = vaultId;
-      document.getElementById('vault-input').value = vaultId;
-      document.getElementById('vault-modal').classList.remove('hidden');
-    }
-    function closeVaultModal() { document.getElementById('vault-modal').classList.add('hidden'); }
-
-    function joinVault() {
-      const code = document.getElementById('vault-input').value.trim().toUpperCase();
-      if (!code) return;
-      vaultId = code;
-      localStorage.setItem('zentravel_vault_id', vaultId);
-      document.getElementById('header-vault-id').innerText = vaultId;
-      document.getElementById('modal-vault-id').innerText = vaultId;
-      closeVaultModal();
-      
-      if (currentUser && !currentUser.isAnonymous) {
-        const userRef = getUserDocRef(currentUser.uid);
-        if (userRef) {
-          userRef.set({ activeVaultId: vaultId }, { merge: true }).catch(() => {});
-        }
-      }
-
-      setupVaultSync();
-      showToast(`Connected to Vault: ${vaultId}`);
-    }
-
-    function generateNewVault() {
-      const randomCode = 'ZEN-' + Math.floor(1000 + Math.random() * 9000);
-      document.getElementById('vault-input').value = randomCode;
-      joinVault();
-    }
-
-    function copyVaultCode() {
-      const tempTextArea = document.createElement("textarea");
-      tempTextArea.value = vaultId;
-      document.body.appendChild(tempTextArea);
-      tempTextArea.select();
-      try {
-        document.execCommand('copy');
-        showToast("Vault code copied!");
-      } catch (err) {}
-      document.body.removeChild(tempTextArea);
-    }
-
-    function openDiagnosticsModal() {
-      document.getElementById('hud-vault-id').innerText = vaultId;
-      document.getElementById('diagnostics-modal').classList.remove('hidden');
-    }
-    function closeDiagnosticsModal() { document.getElementById('diagnostics-modal').classList.add('hidden'); }
-
-    function openToolsModal() {
-      calculateCurrency();
-      document.getElementById('tools-modal').classList.remove('hidden');
-    }
-    function closeToolsModal() { document.getElementById('tools-modal').classList.add('hidden'); }
-
-    function openFlightModal() { document.getElementById('flight-modal').classList.remove('hidden'); }
-    function closeFlightModal() { document.getElementById('flight-modal').classList.add('hidden'); }
-
-    function openHotelModal() { document.getElementById('hotel-modal').classList.remove('hidden'); }
-    function closeHotelModal() { document.getElementById('hotel-modal').classList.add('hidden'); }
-
-    function openItineraryModal() { document.getElementById('itinerary-modal').classList.remove('hidden'); }
-    function closeItineraryModal() { document.getElementById('itinerary-modal').classList.add('hidden'); }
-
-    function openTripEditModal() {
-      document.getElementById('trip-dest-input').value = tripData.destination;
-      document.getElementById('trip-dates-input').value = tripData.dates;
-      document.getElementById('trip-budget-input').value = tripData.totalBudget;
-      document.getElementById('trip-edit-modal').classList.remove('hidden');
-    }
-    function closeTripEditModal() { document.getElementById('trip-edit-modal').classList.add('hidden'); }
-
-    function openExpenseModal() { document.getElementById('expense-modal').classList.remove('hidden'); }
-    function closeExpenseModal() { document.getElementById('expense-modal').classList.add('hidden'); }
-
-    function openTodoModal() { document.getElementById('todo-modal').classList.remove('hidden'); }
-    function closeTodoModal() { document.getElementById('todo-modal').classList.add('hidden'); }
-
-    // Theme Toggle Logic
-    function toggleTheme() {
-      const html = document.documentElement;
-      const icon = document.getElementById('theme-icon');
-      if (html.classList.contains('dark')) {
-        html.classList.remove('dark');
-        icon.className = "fa-solid fa-sun text-xs text-amber-500";
-        localStorage.setItem('zentravel_theme', 'light');
-      } else {
-        html.classList.add('dark');
-        icon.className = "fa-solid fa-moon text-xs";
-        localStorage.setItem('zentravel_theme', 'dark');
-      }
-    }
-
-    // Custom Toast Notification System (Replaces Alert)
-    function showToast(msg, type = 'success') {
-      const container = document.getElementById('toast-container');
-      if (!container) return;
+    // TOAST NOTIFICATIONS
+    function showToast(message, type = 'success') {
+      const toastContainer = document.getElementById('toast-container');
+      if (!toastContainer) return;
 
       const toast = document.createElement('div');
-      toast.className = `glass-card p-3 rounded-xl shadow-xl flex items-center space-x-2 text-xs font-medium border transition-all duration-300 transform translate-y-2 opacity-0 pointer-events-auto ${
-        type === 'error' ? 'border-rose-500/50 text-rose-600 dark:text-rose-400' : 'border-brand-500/50 text-slate-800 dark:text-slate-100'
+      toast.className = `p-3 rounded-xl shadow-xl text-xs font-medium flex items-center justify-between transition-all duration-300 transform translate-y-2 opacity-0 pointer-events-auto ${
+        type === 'error' 
+          ? 'bg-rose-600 text-white border border-rose-500' 
+          : 'bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 border border-slate-700 dark:border-slate-300'
       }`;
 
       toast.innerHTML = `
-        <i class="${type === 'error' ? 'fa-solid fa-circle-exclamation text-rose-500' : 'fa-solid fa-circle-check text-emerald-500'}"></i>
-        <span class="flex-1">${msg}</span>
+        <div class="flex items-center space-x-2">
+          <i class="${type === 'error' ? 'fa-solid fa-circle-exclamation' : 'fa-solid fa-circle-check'} text-sm"></i>
+          <span>${message}</span>
+        </div>
       `;
 
-      container.appendChild(toast);
-
-      requestAnimationFrame(() => {
-        toast.classList.remove('translate-y-2', 'opacity-0');
-      });
+      toastContainer.appendChild(toast);
 
       setTimeout(() => {
-        toast.classList.add('translate-y-2', 'opacity-0');
+        toast.classList.remove('translate-y-2', 'opacity-0');
+      }, 10);
+
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-2');
         setTimeout(() => toast.remove(), 300);
-      }, 2500);
+      }, 3000);
     }
 
-    // On Application Startup
     window.onload = function() {
-      const savedTheme = localStorage.getItem('zentravel_theme');
-      if (savedTheme === 'light') {
-        document.documentElement.classList.remove('dark');
-        const icon = document.getElementById('theme-icon');
-        if (icon) icon.className = "fa-solid fa-sun text-xs text-amber-500";
-      }
-
       loadFromLocalStorage();
-      document.getElementById('header-vault-id').innerText = vaultId;
-      document.getElementById('modal-vault-id').innerText = vaultId;
-
-      initFirebase();
+      updateHeaderVaultBadge();
       renderActiveTab();
+      initFirebase();
+
+      if (urlVault) {
+        showToast(`Connected to shared Vault: ${vaultId}`);
+      }
     };
   </script>
 </body>

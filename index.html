@@ -802,13 +802,20 @@
 
             // Attempt custom token auth if provided by environment
             if (window.__initial_auth_token) {
-                try {
-                    addLog("Attempting custom token authentication...");
-                    await signInWithCustomToken(window.ZenApp.auth, window.__initial_auth_token);
-                    return;
-                } catch (tokenErr) {
-                    addLog(`Custom Token Auth failed (${tokenErr.message}). Falling back to Anonymous Auth...`, 'error');
-                }
+
+
+		    try {
+        		addLog("Initiating direct Anonymous Authentication...");
+       			// Directly call signInAnonymously instead of trying the custom token first
+        		await signInAnonymously(window.ZenApp.auth);
+        		addLog("Successfully authenticated anonymously!");
+        		return;
+    			} catch (authErr) {
+        addLog(`Anonymous Auth failed (${authErr.message}). Check Firebase Console settings.`, 'error');
+    }
+
+
+
             }
 
             // Fallback to anonymous auth

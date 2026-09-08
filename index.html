@@ -695,6 +695,8 @@
             trips: [],
             unsubscribeListener: null,
             authUnsubscribe: null,
+            retryTimer: null,
+            retryAttempts: 0,
             notesDebounceTimer: null,
             isOnline: navigator.onLine,
             cloudInitializedVaults: new Set(),
@@ -783,10 +785,13 @@
                 window.ZenApp.app = initializeApp(firebaseConfig);
                 window.ZenApp.auth = getAuth(window.ZenApp.app);
                 window.ZenApp.db = initializeFirestore(window.ZenApp.app, {
-                    // Force the fallback transport instead of waiting for Firestore
-                    // to auto-detect the network. This avoids the long initial
-                    // WebChannel detection delay seen on some networks/browsers.
-                    experimentalForceLongPolling: true,
+                    // Auto-detect the best transport instead of forcing long-polling.
+                    // Forcing long-polling can itself get blocked by some corporate
+                    // proxies/firewalls/ad-blockers, which surfaces as a Firestore
+                    // "unavailable" error even though the rest of the internet works
+                    // fine. Auto-detect falls back to long-polling only if it's
+                    // actually needed.
+                    experimentalAutoDetectLongPolling: true,
                     useFetchStreams: false
                 });
 
@@ -908,6 +913,11 @@
 
             addLog(`Authoritative ${sourceLabel}: ${vaultTrips.length} trip(s) in ${vaultId}.`, 'success');
             updateSyncBadge('online', 'Live Synced');
+            window.ZenApp.retryAttempts = 0;
+            if (window.ZenApp.retryTimer) {
+                clearTimeout(window.ZenApp.retryTimer);
+                window.ZenApp.retryTimer = null;
+            }
             renderApp();
         }
 
@@ -939,8 +949,36 @@
                 addLog(`SERVER read failed: ${err.code || 'unknown'} - ${err.message}`, 'error');
                 addLog('Firestore server is unreachable; keeping the local cache visible temporarily.', 'info');
                 updateSyncBadge('offline', 'Server Unreachable');
+                scheduleServerRetry(vaultId, tripsRef);
                 return false;
             }
+        }
+
+        // --- AUTOMATIC RETRY WITH BACKOFF ---
+        // The browser can stay "online" (navigator.onLine === true) even while
+        // Firestore's own endpoint is unreachable (corporate proxy, VPN split
+        // tunnel, blocked domain, transient outage). In that case the 'online'
+        // window event never fires again, so without this timer the app would
+        // get stuck on the local cache forever, as seen in the logs.
+        function scheduleServerRetry(vaultId, tripsRef) {
+            if (window.ZenApp.retryTimer) clearTimeout(window.ZenApp.retryTimer);
+
+            const attempt = (window.ZenApp.retryAttempts = (window.ZenApp.retryAttempts || 0) + 1);
+            const delayMs = Math.min(30000, 2000 * Math.pow(2, attempt - 1)); // 2s,4s,8s,16s,30s cap
+
+            addLog(`Retrying Firestore server connection in ${Math.round(delayMs / 1000)}s (attempt ${attempt})...`, 'info');
+
+            window.ZenApp.retryTimer = setTimeout(async () => {
+                // Bail out if the user has since switched vaults or a fresh
+                // subscription has already taken over.
+                if (window.ZenApp.activeVaultId !== vaultId) return;
+                const ok = await fetchVaultFromServer(vaultId, tripsRef);
+                if (ok) {
+                    window.ZenApp.retryAttempts = 0;
+                } else {
+                    scheduleServerRetry(vaultId, tripsRef);
+                }
+            }, delayMs);
         }
 
         // --- REAL-TIME VAULT SUBSCRIPTION ---
@@ -959,6 +997,12 @@
                 window.ZenApp.unsubscribeListener();
                 window.ZenApp.unsubscribeListener = null;
             }
+
+            if (window.ZenApp.retryTimer) {
+                clearTimeout(window.ZenApp.retryTimer);
+                window.ZenApp.retryTimer = null;
+            }
+            window.ZenApp.retryAttempts = 0;
 
             window.ZenApp.activeVaultId = vaultId;
             localStorage.setItem('zentravel_active_vault', vaultId);

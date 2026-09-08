@@ -928,42 +928,16 @@
                     return true;
                 }
 
-                // The server is genuinely empty. Only now is it safe to recover
-                // local-only data or create the default trip.
-                const localTrips = getCachedVaultTrips(vaultId).filter(t => t && t.id && t.vaultId);
-
-                if (localTrips.length > 0) {
-                    window.ZenApp.cloudInitializedVaults.add(vaultId);
-                    window.ZenApp.trips = localTrips;
-                    saveVaultToLocalCache(vaultId, localTrips);
-                    renderApp();
-                    addLog(`SERVER vault is empty; recovering ${localTrips.length} local trip(s)...`, 'info');
-
-                    for (const localTrip of localTrips) {
-                        try {
-                            await setDoc(getTripDocRef(localTrip.id), {
-                                ...localTrip,
-                                vaultId,
-                                updatedAt: Date.now(),
-                                serverUpdatedAt: serverTimestamp()
-                            });
-                        } catch (err) {
-                            addLog(`Recovery failed for ${localTrip.id}: ${err.code || 'unknown'} - ${err.message}`, 'error');
-                        }
-                    }
-                    return true;
-                }
-
-                if (vaultId === 'ZEN-8492') {
-                    addLog('SERVER vault is empty; creating default trip...', 'info');
-                    return await seedDefaultTrip();
-                }
-
+                // The server is genuinely empty. Do NOT restore stale local cache
+                // or silently recreate a default trip. The cloud is authoritative.
+                // This prevents Browser B from displaying data that no longer exists
+                // in the shared Vault.
+                addLog(`SERVER vault ${vaultId} is empty. Displaying an empty Vault.`, 'info');
                 applyAuthoritativeVaultTrips(vaultId, [], 'Firestore server');
                 return true;
             } catch (err) {
                 addLog(`SERVER read failed: ${err.code || 'unknown'} - ${err.message}`, 'error');
-                addLog('Keeping local cache visible until Firestore reconnects.', 'info');
+                addLog('Firestore server is unreachable; keeping the local cache visible temporarily.', 'info');
                 updateSyncBadge('offline', 'Server Unreachable');
                 return false;
             }

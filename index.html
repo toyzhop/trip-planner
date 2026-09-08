@@ -101,7 +101,6 @@
 
 <body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col selection:bg-brand-500 selection:text-white">
 
-    <!-- TOP NAVIGATION BAR -->
     <header class="bg-slate-900/90 backdrop-blur-xl border-b border-slate-800 sticky top-0 z-40 shadow-lg">
         <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
             <div class="flex items-center justify-between h-14 sm:h-16 gap-2">
@@ -149,7 +148,6 @@
         </div>
     </header>
 
-    <!-- MAIN APPLICATION CONTAINER -->
     <main class="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-4 space-y-4">
 
         <!-- TRIP SELECTOR & SUMMARY HEADER CARD -->
@@ -175,7 +173,7 @@
                             <button onclick="openEditTripModal()" title="Edit Active Trip" class="px-3 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium text-xs flex items-center justify-center gap-1.5 transition border border-slate-700 active:scale-95">
                                 <i class="fa-solid fa-pen-to-square"></i> <span class="hidden sm:inline">Edit</span>
                             </button>
-                            <button onclick="confirmDeleteTrip()" title="Delete Active Trip" class="px-3 py-2.5 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 font-medium text-xs flex items-center justify-center gap-1.5 transition active:scale-95">
+                            <button onclick="promptDeleteTrip()" title="Delete Active Trip" class="px-3 py-2.5 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 font-medium text-xs flex items-center justify-center gap-1.5 transition active:scale-95">
                                 <i class="fa-solid fa-trash"></i>
                             </button>
                         </div>
@@ -232,7 +230,6 @@
             </div>
         </section>
 
-        <!-- STICKY NAVIGATION TAB BAR -->
         <nav class="sticky top-14 sm:top-16 z-20 bg-slate-950/95 backdrop-blur-md py-2 -mx-3 px-3 sm:mx-0 sm:px-0 border-y border-slate-800 shadow-md">
             <div class="flex items-center gap-2 overflow-x-auto no-scrollbar pb-0.5">
                 <button onclick="switchTab('itinerary')" id="tab-itinerary" class="tab-btn active px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold whitespace-nowrap transition-all flex items-center gap-2 shrink-0">
@@ -355,8 +352,6 @@
 
     </main>
 
-    <!-- MODALS SECTION -->
-
     <!-- VAULT MANAGEMENT MODAL -->
     <div id="vaultModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-3 sm:p-4">
         <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-5 sm:p-6 shadow-2xl relative">
@@ -438,7 +433,7 @@
         </div>
     </div>
 
-    <!-- ACTIVITY MODAL -->
+    <!-- DYNAMIC ACTIVITY MODAL -->
     <div id="activityModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-3 sm:p-4">
         <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-5 sm:p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
             <button onclick="closeActivityModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-lg p-1">
@@ -451,14 +446,9 @@
                 <div class="grid grid-cols-2 gap-2.5">
                     <div>
                         <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Day Tag</label>
+                        <!-- DYNAMICALLY POPULATED BASED ON TRIP DURATION -->
                         <select id="actFormDay" class="w-full px-3 py-2.5 rounded-xl border border-slate-700 bg-slate-950 text-slate-100 text-xs focus:border-brand-500">
-                            <option value="Day 1">Day 1</option>
-                            <option value="Day 2">Day 2</option>
-                            <option value="Day 3">Day 3</option>
-                            <option value="Day 4">Day 4</option>
-                            <option value="Day 5">Day 5</option>
-                            <option value="Day 6">Day 6</option>
-                            <option value="Day 7">Day 7</option>
+                            <!-- Populated in JS via populateActivityDayOptions() -->
                         </select>
                     </div>
                     <div>
@@ -467,8 +457,8 @@
                             <option value="Sightseeing">⛩️ Sightseeing</option>
                             <option value="Dining">🍱 Dining</option>
                             <option value="Transport">🚄 Transport</option>
+<option value="ThemePark">🎢 Theme Park</option>
                             <option value="Shopping">🛍️ Shopping</option>
-                            <option value="ThemePark">🎢 Theme Park</option>
                             <option value="Other">🌀 Other</option>
                         </select>
                     </div>
@@ -519,7 +509,6 @@
             <form onsubmit="handleFlightSubmit(event)" class="space-y-4">
                 <input type="hidden" id="flightFormId">
                 
-                <!-- TOP LEVEL SUMMARY INFO -->
                 <div class="grid grid-cols-2 gap-2.5">
                     <div>
                         <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">PNR / Booking Ref</label>
@@ -531,7 +520,6 @@
                     </div>
                 </div>
 
-                <!-- DYNAMIC FLIGHT LEGS CONTAINER -->
                 <div class="space-y-3">
                     <div class="flex items-center justify-between border-b border-slate-800 pb-2">
                         <span class="text-xs font-bold uppercase tracking-wider text-brand-400 flex items-center gap-1.5">
@@ -623,6 +611,26 @@
         </div>
     </div>
 
+    <!-- DELETE CONFIRMATION MODAL -->
+    <div id="deleteTripModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-3 sm:p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-sm w-full p-5 shadow-2xl relative space-y-4">
+            <div class="flex items-center gap-3 text-red-400">
+                <div class="w-10 h-10 rounded-xl bg-red-500/10 flex items-center justify-center text-xl shrink-0">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                </div>
+                <div>
+                    <h3 class="text-base font-bold text-white">Delete Trip Itinerary</h3>
+                    <p class="text-xs text-slate-400">This action cannot be undone.</p>
+                </div>
+            </div>
+            <p class="text-xs text-slate-300">Are you sure you want to permanently delete this trip and all associated itinerary items?</p>
+            <div class="flex justify-end gap-2 pt-1">
+                <button onclick="closeDeleteTripModal()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold">Cancel</button>
+                <button onclick="executeDeleteTrip()" class="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-semibold transition shadow-lg shadow-red-600/20 active:scale-95">Delete Trip</button>
+            </div>
+        </div>
+    </div>
+
     <!-- DIAGNOSTICS & LOGS MODAL -->
     <div id="diagnosticsModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-3 sm:p-4">
         <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-5 shadow-2xl relative space-y-4">
@@ -658,7 +666,7 @@
             </div>
 
             <button onclick="seedSampleData()" class="w-full py-2.5 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 rounded-xl text-xs font-semibold transition flex items-center justify-center gap-2 active:scale-95">
-                <i class="fa-solid fa-wand-magic-sparkles"></i> Seed Sample Japan Itinerary Data
+                <i class="fa-solid fa-wand-magic-sparkles"></i> Seed Sample 10-Day Japan Itinerary
             </button>
         </div>
     </div>
@@ -671,7 +679,6 @@
         </div>
     </div>
 
-    <!-- FIREBASE MODULE & REAL-TIME LOGIC -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { 
@@ -705,7 +712,6 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // State variables
         let currentUser = null;
         let activeVaultId = localStorage.getItem('zentravel_vault_id') || 'ZEN-8492';
         let activeTripId = localStorage.getItem('zentravel_active_trip_id') || null;
@@ -721,10 +727,8 @@
         let activeDayFilter = 'ALL';
         let notesSaveTimeout = null;
 
-        // Unsubscribe handles for snapshots
         let unsubscribers = [];
 
-        // Local Storage Sync Helpers
         function saveLocalVaultData() {
             const vaultData = {
                 trips: tripsData,
@@ -766,7 +770,6 @@
             loadLocalVaultData();
         }
 
-        // Helper: Toast Notifications
         window.showToast = function(msg, type = 'success') {
             const toast = document.getElementById('toast');
             const toastMsg = document.getElementById('toastMsg');
@@ -815,7 +818,16 @@
             });
         }
 
-        // Helper: Calculate date display for itinerary day tags (e.g. "Day 1 (Apr 1)")
+        function getTripDayCount(trip) {
+            if (!trip || !trip.startDate || !trip.endDate) return 7;
+            const start = new Date(trip.startDate);
+            const end = new Date(trip.endDate);
+            if (isNaN(start.getTime()) || isNaN(end.getTime())) return 7;
+            const diffTime = end.getTime() - start.getTime();
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+            return Math.max(1, diffDays);
+        }
+
         function getDayDateLabel(dayStr, startDateStr) {
             if (!startDateStr) return dayStr;
             const match = dayStr ? dayStr.match(/Day\s*(\d+)/i) : null;
@@ -823,7 +835,6 @@
             const dayNum = parseInt(match[1], 10);
             if (isNaN(dayNum)) return dayStr;
 
-            // Handle date parsing with YYYY-MM-DD
             const parts = startDateStr.split('-');
             if (parts.length !== 3) return dayStr;
             const year = parseInt(parts[0], 10);
@@ -838,7 +849,48 @@
             return `${dayStr} (${formattedDate})`;
         }
 
-        // Attach Direct Real-Time Snapshot Listeners
+        // Dynamic activity day dropdown option builder to fix day > 7 limit bug
+        function populateActivityDayOptions(selectedDay = 'Day 1') {
+            const daySelect = document.getElementById('actFormDay');
+            if (!daySelect) return;
+            daySelect.innerHTML = '';
+
+            const currentTrip = tripsData.find(t => t.id === activeTripId);
+            let totalDays = getTripDayCount(currentTrip);
+
+            // Also ensure option list covers any existing activity day numbers
+            const currentActivities = activitiesData.filter(a => a.tripId === activeTripId);
+            currentActivities.forEach(a => {
+                const m = a.day ? a.day.match(/\d+/) : null;
+                if (m) {
+                    const num = parseInt(m[0], 10);
+                    if (num > totalDays) totalDays = num;
+                }
+            });
+
+            if (selectedDay) {
+                const m = selectedDay.match(/\d+/);
+                if (m) {
+                    const num = parseInt(m[0], 10);
+                    if (num > totalDays) totalDays = num;
+                }
+            }
+
+            const countToRender = Math.max(totalDays, 7);
+
+            for (let i = 1; i <= countToRender; i++) {
+                const dayKey = `Day ${i}`;
+                const dayLabel = getDayDateLabel(dayKey, currentTrip?.startDate);
+                const opt = document.createElement('option');
+                opt.value = dayKey;
+                opt.innerText = dayLabel;
+                if (dayKey === selectedDay) {
+                    opt.selected = true;
+                }
+                daySelect.appendChild(opt);
+            }
+        }
+
         function attachVaultListeners(vaultId) {
             unsubscribers.forEach(unsub => unsub && unsub());
             unsubscribers = [];
@@ -907,7 +959,6 @@
             document.getElementById('diagTripId').innerText = activeTripId || 'None';
         }
 
-        // Render All UI Components
         function updateAllUI() {
             renderTripSelector();
             renderTripHeader();
@@ -921,7 +972,6 @@
             document.getElementById('diagSyncedCount').innerText = `${totalCount} entries`;
         }
 
-        // Trip Selector Dropdown
         function renderTripSelector() {
             const select = document.getElementById('tripSelect');
             select.innerHTML = '';
@@ -943,7 +993,6 @@
             });
         }
 
-        // Header Info Card
         function renderTripHeader() {
             const currentTrip = tripsData.find(t => t.id === activeTripId);
             if (!currentTrip) {
@@ -958,7 +1007,6 @@
             document.getElementById('tripDatesDisplay').innerText = `${currentTrip.startDate} to ${currentTrip.endDate}`;
         }
 
-        // Summary Metrics
         function renderSummaryMetrics() {
             const tripActivities = activitiesData.filter(a => a.tripId === activeTripId);
             const tripFlights = flightsData.filter(f => f.tripId === activeTripId);
@@ -979,7 +1027,6 @@
             document.getElementById('counterPacking').innerText = `${pct}%`;
         }
 
-        // Render Itinerary Tab (Sorted by Day in ascending order)
         function renderItinerary() {
             const listContainer = document.getElementById('itineraryList');
             const dayContainer = document.getElementById('dayFilterContainer');
@@ -987,10 +1034,16 @@
 
             const currentTrip = tripsData.find(t => t.id === activeTripId);
             const currentActivities = activitiesData.filter(a => a.tripId === activeTripId);
+            const tripDayCount = getTripDayCount(currentTrip);
 
-            // Day Filter Buttons
-            const daysSet = new Set(['Day 1', 'Day 2', 'Day 3', 'Day 4', 'Day 5', 'Day 6', 'Day 7']);
-            currentActivities.forEach(a => daysSet.add(a.day));
+            // Populate all days dynamically for the entire duration of the trip
+            const daysSet = new Set();
+            for (let i = 1; i <= Math.max(7, tripDayCount); i++) {
+                daysSet.add(`Day ${i}`);
+            }
+            currentActivities.forEach(a => {
+                if (a.day) daysSet.add(a.day);
+            });
             
             dayContainer.innerHTML = '';
             const allBtn = document.createElement('button');
@@ -1005,7 +1058,8 @@
                 return numA - numB;
             });
 
-            sortedDays.slice(0, 14).forEach(day => {
+            // Display ALL days without slicing limit
+            sortedDays.forEach(day => {
                 const btn = document.createElement('button');
                 btn.className = `day-filter-btn px-3 py-1 rounded-lg text-xs font-semibold transition ${activeDayFilter === day ? 'bg-brand-600 text-white' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}`;
                 btn.innerText = getDayDateLabel(day, currentTrip?.startDate);
@@ -1015,7 +1069,6 @@
 
             const filtered = activeDayFilter === 'ALL' ? currentActivities : currentActivities.filter(a => a.day === activeDayFilter);
 
-            // SORT ITINERARY BY DAY IN ASCENDING ORDER
             filtered.sort((a, b) => {
                 const matchA = a.day ? a.day.match(/\d+/) : null;
                 const matchB = b.day ? b.day.match(/\d+/) : null;
@@ -1059,12 +1112,10 @@
             });
         }
 
-        // Helper: Convert legacy flight schema to legs array seamlessly
         function getFlightLegsArray(f) {
             if (f.legs && Array.isArray(f.legs) && f.legs.length > 0) {
                 return f.legs;
             }
-            // Backward compatibility conversion for legacy records
             const legs = [{
                 airline: f.airline || '',
                 flightNum: f.flightNum || '',
@@ -1089,14 +1140,12 @@
             return legs;
         }
 
-        // Render Flights Tab
         function renderFlights() {
             const container = document.getElementById('flightsList');
             container.innerHTML = '';
 
             let current = flightsData.filter(f => f.tripId === activeTripId);
 
-            // SORT FLIGHTS BY DATE ASCENDING
             current.sort((a, b) => {
                 const legsA = getFlightLegsArray(a);
                 const legsB = getFlightLegsArray(b);
@@ -1125,11 +1174,8 @@
                 const card = document.createElement('div');
                 card.className = "p-4 bg-slate-900/80 border border-slate-800 rounded-2xl space-y-3 relative flex flex-col justify-between";
 
-                // Build legs breakdown HTML
                 let legsHtml = '';
                 legs.forEach((leg, idx) => {
-
-                    // Layover Banner between transfers
                     if (idx > 0) {
                         const transferPoint = leg.layoverAirport || leg.fromAirport || 'Transfer Airport';
                         const dur = leg.layoverDuration ? `(${leg.layoverDuration})` : '';
@@ -1189,7 +1235,6 @@
                             </div>
                         </div>
 
-                        <!-- Render All Legs & Layovers -->
                         <div class="space-y-2">
                             ${legsHtml}
                         </div>
@@ -1209,7 +1254,6 @@
             });
         }
 
-        // Render Hotels Tab
         function renderLodging() {
             const container = document.getElementById('lodgingList');
             container.innerHTML = '';
@@ -1245,7 +1289,6 @@
             });
         }
 
-        // Render Packing Tab
         function renderPacking() {
             const container = document.getElementById('checklistItemsList');
             container.innerHTML = '';
@@ -1279,7 +1322,6 @@
             });
         }
 
-        // Render Notes Tab
         function updateNotesUI() {
             const currentNote = notesData.find(n => n.tripId === activeTripId);
             const textarea = document.getElementById('sharedNotesTextarea');
@@ -1288,7 +1330,6 @@
             }
         }
 
-        // Tab Navigation
         window.switchTab = function(tabName) {
             document.querySelectorAll('.tab-view').forEach(el => el.classList.add('hidden'));
             document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
@@ -1299,7 +1340,6 @@
             if (targetBtn) targetBtn.classList.add('active');
         };
 
-        // Vault Handlers
         window.openVaultModal = function() {
             document.getElementById('vaultKeyInput').value = activeVaultId;
             document.getElementById('vaultModal').classList.remove('hidden');
@@ -1330,7 +1370,6 @@
             showToast(`Vault Key copied: ${activeVaultId}`);
         };
 
-        // Diagnostics Handlers
         window.openDiagnosticsModal = function() {
             document.getElementById('diagnosticsModal').classList.remove('hidden');
         };
@@ -1338,14 +1377,12 @@
             document.getElementById('diagnosticsModal').classList.add('hidden');
         };
 
-        // Trip Selection Dropdown Handler
         window.onTripSelected = function(tripId) {
             activeTripId = tripId || null;
             localStorage.setItem('zentravel_active_trip_id', activeTripId || '');
             updateAllUI();
         };
 
-        // Trip CRUD Handlers
         window.openNewTripModal = function() {
             document.getElementById('tripFormId').value = '';
             document.getElementById('tripFormTitle').value = '';
@@ -1422,10 +1459,17 @@
             }
         };
 
-        window.confirmDeleteTrip = async function() {
+        window.promptDeleteTrip = function() {
             if (!activeTripId) { showToast('No trip selected to delete.', 'error'); return; }
-            if (!confirm('Are you sure you want to delete this trip itinerary?')) return;
+            document.getElementById('deleteTripModal').classList.remove('hidden');
+        };
 
+        window.closeDeleteTripModal = function() {
+            document.getElementById('deleteTripModal').classList.add('hidden');
+        };
+
+        window.executeDeleteTrip = async function() {
+            closeDeleteTripModal();
             if (isLocalFallback) {
                 tripsData = tripsData.filter(t => t.id !== activeTripId);
                 activitiesData = activitiesData.filter(a => a.tripId !== activeTripId);
@@ -1446,15 +1490,14 @@
                 showToast('Trip deleted.');
             } catch (err) {
                 enableLocalFallbackMode();
-                window.confirmDeleteTrip();
+                window.executeDeleteTrip();
             }
         };
 
-        // Activity CRUD Handlers
         window.openActivityModal = function() {
             if (!activeTripId) { showToast('Please select or create a trip first.', 'error'); return; }
             document.getElementById('actFormId').value = '';
-            document.getElementById('actFormDay').value = 'Day 1';
+            populateActivityDayOptions('Day 1');
             document.getElementById('actFormCategory').value = 'Sightseeing';
             document.getElementById('actFormTitle').value = '';
             document.getElementById('actFormTime').value = '09:00 AM';
@@ -1470,7 +1513,7 @@
             if (!item) return;
 
             document.getElementById('actFormId').value = item.id;
-            document.getElementById('actFormDay').value = item.day || 'Day 1';
+            populateActivityDayOptions(item.day || 'Day 1');
             document.getElementById('actFormCategory').value = item.category || 'Sightseeing';
             document.getElementById('actFormTitle').value = item.title || '';
             document.getElementById('actFormTime').value = item.time || '';
@@ -1501,6 +1544,22 @@
                 updatedAt: new Date().toISOString()
             };
 
+            if (isLocalFallback) {
+                if (id) {
+                    const idx = activitiesData.findIndex(a => a.id === id);
+                    if (idx !== -1) activitiesData[idx] = { ...activitiesData[idx], ...payload };
+                } else {
+                    payload.id = 'act_' + Date.now();
+                    payload.createdAt = new Date().toISOString();
+                    activitiesData.push(payload);
+                }
+                saveLocalVaultData();
+                updateAllUI();
+                closeActivityModal();
+                showToast('Activity saved!');
+                return;
+            }
+
             try {
                 if (id) {
                     await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'activities', id), payload);
@@ -1518,6 +1577,14 @@
         };
 
         window.deleteActivity = async function(id) {
+            if (isLocalFallback) {
+                activitiesData = activitiesData.filter(a => a.id !== id);
+                saveLocalVaultData();
+                updateAllUI();
+                showToast('Activity removed.');
+                return;
+            }
+
             try {
                 await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'activities', id));
                 showToast('Activity removed.');
@@ -1526,7 +1593,6 @@
             }
         };
 
-        // DYNAMIC MULTI-LEG FLIGHT FORM BUILDER HELPERS
         window.addFlightLegFormGroup = function(legData = null) {
             const container = document.getElementById('flightLegsContainer');
             const legIndex = container.children.length;
@@ -1608,7 +1674,6 @@
             }
         };
 
-        // Flight CRUD Handlers (Multi-Transfer Enhanced)
         window.openFlightModal = function() {
             if (!activeTripId) { showToast('Please select or create a trip first.', 'error'); return; }
             document.getElementById('flightFormId').value = '';
@@ -1618,7 +1683,6 @@
             const container = document.getElementById('flightLegsContainer');
             container.innerHTML = '';
             
-            // Default 1 Leg
             addFlightLegFormGroup();
 
             document.getElementById('flightModalTitle').innerText = "Add Flight Itinerary";
@@ -1653,7 +1717,6 @@
             e.preventDefault();
             const id = document.getElementById('flightFormId').value;
 
-            // Extract legs from dynamic form groups
             const legCards = document.querySelectorAll('#flightLegsContainer .flight-leg-card');
             const legs = [];
 
@@ -1697,6 +1760,22 @@
                 updatedAt: new Date().toISOString()
             };
 
+            if (isLocalFallback) {
+                if (id) {
+                    const idx = flightsData.findIndex(f => f.id === id);
+                    if (idx !== -1) flightsData[idx] = { ...flightsData[idx], ...payload };
+                } else {
+                    payload.id = 'flt_' + Date.now();
+                    payload.createdAt = new Date().toISOString();
+                    flightsData.push(payload);
+                }
+                saveLocalVaultData();
+                updateAllUI();
+                closeFlightModal();
+                showToast('Flight itinerary saved!');
+                return;
+            }
+
             try {
                 if (id) {
                     await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'flights', id), payload);
@@ -1714,6 +1793,14 @@
         };
 
         window.deleteFlight = async function(id) {
+            if (isLocalFallback) {
+                flightsData = flightsData.filter(f => f.id !== id);
+                saveLocalVaultData();
+                updateAllUI();
+                showToast('Flight removed.');
+                return;
+            }
+
             try {
                 await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'flights', id));
                 showToast('Flight removed.');
@@ -1722,7 +1809,6 @@
             }
         };
 
-        // Lodging CRUD Handlers
         window.openLodgingModal = function() {
             if (!activeTripId) { showToast('Please select or create a trip first.', 'error'); return; }
             document.getElementById('lodgingFormId').value = '';
@@ -1767,6 +1853,22 @@
                 updatedAt: new Date().toISOString()
             };
 
+            if (isLocalFallback) {
+                if (id) {
+                    const idx = lodgingData.findIndex(l => l.id === id);
+                    if (idx !== -1) lodgingData[idx] = { ...lodgingData[idx], ...payload };
+                } else {
+                    payload.id = 'lodging_' + Date.now();
+                    payload.createdAt = new Date().toISOString();
+                    lodgingData.push(payload);
+                }
+                saveLocalVaultData();
+                updateAllUI();
+                closeLodgingModal();
+                showToast('Lodging saved');
+                return;
+            }
+
             try {
                 if (id) {
                     await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'lodging', id), payload);
@@ -1775,7 +1877,7 @@
                     payload.createdBy = currentUser ? currentUser.uid : 'anon';
                     payload.createdAt = new Date().toISOString();
                     await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'lodging'), payload);
-                    showToast('Lodging saved!');
+                    showToast('Lodging added!');
                 }
                 closeLodgingModal();
             } catch (err) {
@@ -1784,6 +1886,13 @@
         };
 
         window.deleteLodging = async function(id) {
+            if (isLocalFallback) {
+                lodgingData = lodgingData.filter(l => l.id !== id);
+                saveLocalVaultData();
+                updateAllUI();
+                showToast('Lodging deleted');
+                return;
+            }
             try {
                 await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'lodging', id));
                 showToast('Lodging removed.');
@@ -1792,7 +1901,6 @@
             }
         };
 
-        // Packing Handlers
         window.handleAddChecklistItem = async function(e) {
             e.preventDefault();
             if (!activeTripId) { showToast('Please select or create a trip first.', 'error'); return; }
@@ -1808,25 +1916,46 @@
                 updatedAt: new Date().toISOString()
             };
 
+            if (isLocalFallback) {
+                payload.id = 'pack_' + Date.now();
+                payload.createdAt = new Date().toISOString();
+                packingData.push(payload);
+                saveLocalVaultData();
+                updateAllUI();
+                input.value = '';
+                showToast('Item added');
+                return;
+            }
+
             try {
                 payload.createdBy = currentUser ? currentUser.uid : 'anon';
                 payload.createdAt = new Date().toISOString();
                 await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'packing'), payload);
                 input.value = '';
-                showToast('Item added to packing list!');
+                showToast('Item added!');
             } catch (err) {
-                showToast('Save error: ' + err.message, 'error');
+                showToast('Error: ' + err.message, 'error');
             }
         };
 
         window.togglePackingItem = async function(id, checked) {
+            if (isLocalFallback) {
+                const item = packingData.find(p => p.id === id);
+                if (item) {
+                    item.checked = checked;
+                    saveLocalVaultData();
+                    renderSummaryMetrics();
+                    renderPacking();
+                }
+                return;
+            }
             try {
                 await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'packing', id), {
                     checked: checked,
                     updatedAt: new Date().toISOString()
                 });
             } catch (err) {
-                showToast('Update error: ' + err.message, 'error');
+                showToast('Error: ' + err.message, 'error');
             }
         };
 
@@ -1836,7 +1965,6 @@
 
             document.getElementById('packingFormId').value = item.id;
             document.getElementById('packingFormText').value = item.text || '';
-            document.getElementById('packingModalTitle').innerText = "Edit Packing Item";
             document.getElementById('packingModal').classList.remove('hidden');
         };
 
@@ -1848,8 +1976,17 @@
             e.preventDefault();
             const id = document.getElementById('packingFormId').value;
             const text = document.getElementById('packingFormText').value.trim();
+            if (!text) return;
 
-            if (!id || !text) return;
+            if (isLocalFallback) {
+                const idx = packingData.findIndex(p => p.id === id);
+                if (idx !== -1) packingData[idx].text = text;
+                saveLocalVaultData();
+                updateAllUI();
+                closePackingModal();
+                showToast('Packing item updated');
+                return;
+            }
 
             try {
                 await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'packing', id), {
@@ -1859,31 +1996,37 @@
                 closePackingModal();
                 showToast('Packing item updated!');
             } catch (err) {
-                showToast('Update error: ' + err.message, 'error');
+                showToast('Save error: ' + err.message, 'error');
             }
         };
 
         window.deletePackingItem = async function(id) {
+            if (isLocalFallback) {
+                packingData = packingData.filter(p => p.id !== id);
+                saveLocalVaultData();
+                updateAllUI();
+                showToast('Item deleted');
+                return;
+            }
             try {
                 await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'packing', id));
-                showToast('Packing item removed.');
+                showToast('Item deleted');
             } catch (err) {
                 showToast('Delete error: ' + err.message, 'error');
             }
         };
 
-        // Notes Handlers
         window.handleNotesInput = function() {
             if (!activeTripId) return;
-
+            const text = document.getElementById('sharedNotesTextarea').value;
             const indicator = document.getElementById('notesSaveIndicator');
-            indicator.innerHTML = '<i class="fa-solid fa-spinner animate-spin text-amber-400"></i> <span>Saving...</span>';
+            if (indicator) {
+                indicator.innerHTML = '<i class="fa-solid fa-spinner animate-spin text-amber-400"></i> <span>Saving...</span>';
+            }
 
             clearTimeout(notesSaveTimeout);
             notesSaveTimeout = setTimeout(async () => {
-                const text = document.getElementById('sharedNotesTextarea').value;
-                const existingNote = notesData.find(n => n.tripId === activeTripId);
-
+                const currentNote = notesData.find(n => n.tripId === activeTripId);
                 const payload = {
                     vaultId: activeVaultId,
                     tripId: activeTripId,
@@ -1891,187 +2034,167 @@
                     updatedAt: new Date().toISOString()
                 };
 
-                try {
-                    if (existingNote) {
-                        await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'notes', existingNote.id), payload);
+                if (isLocalFallback) {
+                    if (currentNote) {
+                        currentNote.text = text;
                     } else {
-                        payload.createdBy = currentUser ? currentUser.uid : 'anon';
+                        payload.id = 'note_' + Date.now();
+                        notesData.push(payload);
+                    }
+                    saveLocalVaultData();
+                    if (indicator) {
+                        indicator.innerHTML = '<i class="fa-solid fa-cloud text-brand-400"></i> <span>Saved locally</span>';
+                    }
+                    return;
+                }
+
+                try {
+                    if (currentNote) {
+                        await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'notes', currentNote.id), payload);
+                    } else {
                         payload.createdAt = new Date().toISOString();
                         await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'notes'), payload);
                     }
-                    indicator.innerHTML = '<i class="fa-solid fa-cloud text-brand-400"></i> <span>Synced</span>';
+                    if (indicator) {
+                        indicator.innerHTML = '<i class="fa-solid fa-cloud text-brand-400"></i> <span>Synced</span>';
+                    }
                 } catch (err) {
-                    indicator.innerHTML = '<i class="fa-solid fa-triangle-exclamation text-red-400"></i> <span>Error</span>';
+                    if (indicator) {
+                        indicator.innerHTML = '<i class="fa-solid fa-triangle-exclamation text-red-400"></i> <span>Sync error</span>';
+                    }
                 }
             }, 800);
         };
 
-        // Seed Sample Japan Itinerary Data
         window.seedSampleData = async function() {
-            if (!confirm("This will seed sample Japan itinerary data into your current Vault. Proceed?")) return;
+            showToast("Seeding sample 10-day Japan trip...", "success");
+
+            const sampleTrip = {
+                vaultId: activeVaultId,
+                title: "Japan Spring Expedition (10 Days)",
+                destination: "Tokyo, Kyoto & Osaka, Japan",
+                startDate: "2026-04-01",
+                endDate: "2026-04-10",
+                createdAt: new Date().toISOString()
+            };
 
             try {
-                showToast("Seeding sample data...");
-
-                // Create Sample Trip
-                const tripPayload = {
-                    vaultId: activeVaultId,
-                    title: "Japan Spring Blossom Tour 🌸",
-                    destination: "Tokyo & Kyoto, Japan",
-                    startDate: "2026-04-01",
-                    endDate: "2026-04-07",
-                    createdBy: currentUser ? currentUser.uid : 'anon',
-                    createdAt: new Date().toISOString(),
-                    updatedAt: new Date().toISOString()
-                };
-
                 let tripRefId;
                 if (isLocalFallback) {
-                    tripPayload.id = 'trip_' + Date.now();
-                    tripsData.push(tripPayload);
-                    tripRefId = tripPayload.id;
+                    sampleTrip.id = 'trip_' + Date.now();
+                    tripsData.push(sampleTrip);
+                    tripRefId = sampleTrip.id;
                 } else {
-                    const docRef = await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'trips'), tripPayload);
+                    const docRef = await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'trips'), sampleTrip);
                     tripRefId = docRef.id;
                 }
 
                 activeTripId = tripRefId;
                 localStorage.setItem('zentravel_active_trip_id', activeTripId);
 
-                // Sample Activities
                 const sampleActivities = [
-                    { day: "Day 1", category: "Sightseeing", title: "Arrive at Narita & Skyliner to Tokyo", time: "02:00 PM", cost: 30, location: "Narita Airport", notes: "Collect Suica card and Pocket WiFi at Terminal 1." },
-                    { day: "Day 1", category: "Dining", title: "Dinner at Okeya Ramen Shinjuku", time: "07:00 PM", cost: 25, location: "Shinjuku, Tokyo", notes: "Famous for tonkotsu ramen." },
-                    { day: "Day 2", category: "Sightseeing", title: "Senso-ji Temple & Asakusa Street Food", time: "09:00 AM", cost: 15, location: "Asakusa, Tokyo", notes: "Try melonpan and fresh dango." },
-                    { day: "Day 2", category: "Sightseeing", title: "Tokyo Skytree Observatory Deck", time: "02:30 PM", cost: 35, location: "Sumida, Tokyo", notes: "Sunset views over Mount Fuji if clear." },
-                    { day: "Day 3", category: "Transport", title: "Shinkansen Bullet Train to Kyoto", time: "08:30 AM", cost: 140, location: "Tokyo Station → Kyoto Station", notes: "Reserved seats on Nozomi 15." },
-                    { day: "Day 3", category: "Sightseeing", title: "Fushimi Inari Torii Gate Walk", time: "03:00 PM", cost: 0, location: "Fushimi Ward, Kyoto", notes: "Hike up to Yotsutsuji intersection for evening view." },
-                    { day: "Day 4", category: "Sightseeing", title: "Arashiyama Bamboo Grove & Monkey Park", time: "08:00 AM", cost: 10, location: "Arashiyama, Kyoto", notes: "Go early to avoid tour buses." }
+                    { day: 'Day 1', category: 'Transport', title: 'Arrive at Narita & Skyliner Express to Tokyo', time: '02:00 PM', cost: 30, location: 'Narita Airport', notes: 'Get Welcome Suica card at station' },
+                    { day: 'Day 2', category: 'Sightseeing', title: 'Senso-ji Temple & Asakusa Walking Tour', time: '09:00 AM', cost: 0, location: 'Asakusa, Tokyo', notes: 'Nakamise Shopping Street' },
+                    { day: 'Day 3', category: 'Sightseeing', title: 'Shinjuku Gyoen National Garden', time: '10:00 AM', cost: 5, location: 'Shinjuku, Tokyo', notes: 'Cherry blossom picnic' },
+                    { day: 'Day 5', category: 'Transport', title: 'Shinkansen Bullet Train to Kyoto', time: '08:30 AM', cost: 140, location: 'Tokyo Station', notes: 'Reserved seats on Mount Fuji side' },
+                    { day: 'Day 6', category: 'Sightseeing', title: 'Fushimi Inari Shrine & Arashiyama Bamboo Grove', time: '07:00 AM', cost: 15, location: 'Kyoto', notes: 'Early start to skip crowds' },
+                    { day: 'Day 8', category: 'Dining', title: 'Dotonbori Street Food Crawl', time: '06:00 PM', cost: 50, location: 'Osaka', notes: 'Takoyaki and Okonomiyaki' },
+                    { day: 'Day 10', category: 'Shopping', title: 'Umeda Sky Building & Airport Express', time: '11:00 AM', cost: 20, location: 'KIX Airport', notes: 'Duty-free shopping before flight' }
                 ];
 
                 for (const act of sampleActivities) {
-                    const actPayload = {
-                        vaultId: activeVaultId,
-                        tripId: tripRefId,
-                        ...act,
-                        createdBy: currentUser ? currentUser.uid : 'anon',
-                        createdAt: new Date().toISOString(),
-                        updatedAt: new Date().toISOString()
-                    };
+                    const payload = { ...act, vaultId: activeVaultId, tripId: tripRefId, createdAt: new Date().toISOString() };
                     if (isLocalFallback) {
-                        actPayload.id = 'act_' + Math.random().toString(36).substr(2, 9);
-                        activitiesData.push(actPayload);
+                        payload.id = 'act_' + Math.random().toString(36).substr(2, 9);
+                        activitiesData.push(payload);
                     } else {
-                        await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'activities'), actPayload);
+                        await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'activities'), payload);
                     }
                 }
 
-                // Sample Flight
-                const flightPayload = {
+                const sampleFlights = [{
                     vaultId: activeVaultId,
                     tripId: tripRefId,
-                    airline: "Singapore Airlines",
-                    flightNum: "SQ 638",
-                    dep: "2026-04-01T00:30",
-                    arr: "2026-04-01T08:00",
-                    pnr: "SQ882K",
-                    cost: 850,
+                    airline: 'Singapore Airlines',
+                    flightNum: 'SQ 638',
+                    pnr: 'SQ-JPN99',
+                    cost: 920,
                     hasConnecting: false,
                     legs: [{
-                        airline: "Singapore Airlines",
-                        flightNum: "SQ 638",
-                        fromAirport: "SIN",
-                        toAirport: "NRT",
-                        dep: "2026-04-01T00:30",
-                        arr: "2026-04-01T08:00"
-                    }],
-                    createdBy: currentUser ? currentUser.uid : 'anon',
-                    createdAt: new Date().toISOString(),
-                    updatedAt: new Date().toISOString()
-                };
+                        airline: 'Singapore Airlines',
+                        flightNum: 'SQ 638',
+                        fromAirport: 'SIN',
+                        toAirport: 'NRT',
+                        dep: '2026-04-01T23:55',
+                        arr: '2026-04-02T08:00'
+                    }]
+                }];
 
-                if (isLocalFallback) {
-                    flightPayload.id = 'flt_' + Math.random().toString(36).substr(2, 9);
-                    flightsData.push(flightPayload);
-                } else {
-                    await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'flights'), flightPayload);
+                for (const flt of sampleFlights) {
+                    if (isLocalFallback) {
+                        flt.id = 'flt_' + Date.now();
+                        flightsData.push(flt);
+                    } else {
+                        await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'flights'), flt);
+                    }
                 }
 
-                // Sample Lodging
-                const lodgingPayload = {
-                    vaultId: activeVaultId,
-                    tripId: tripRefId,
-                    name: "Hotel Gracery Shinjuku",
-                    checkIn: "2026-04-01",
-                    checkOut: "2026-04-03",
-                    conf: "AGD-994821",
-                    cost: 320,
-                    createdBy: currentUser ? currentUser.uid : 'anon',
-                    createdAt: new Date().toISOString(),
-                    updatedAt: new Date().toISOString()
-                };
-
-                if (isLocalFallback) {
-                    lodgingPayload.id = 'lodg_' + Math.random().toString(36).substr(2, 9);
-                    lodgingData.push(lodgingPayload);
-                } else {
-                    await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'lodging'), lodgingPayload);
-                }
-
-                // Sample Packing Items
-                const samplePacking = [
-                    "Passport & Visa",
-                    "Japan JR Rail Pass / Suica",
-                    "Universal Plug Adapter (Type A)",
-                    "Power Bank (10000mAh)",
-                    "Comfortable Walking Shoes",
-                    "Yen Cash (JPY)"
+                const sampleLodging = [
+                    { vaultId: activeVaultId, tripId: tripRefId, name: 'Hotel Gracery Shinjuku', checkIn: '2026-04-01', checkOut: '2026-04-05', conf: 'HGS-8812', cost: 680 },
+                    { vaultId: activeVaultId, tripId: tripRefId, name: 'Kyoto Century Hotel', checkIn: '2026-04-05', checkOut: '2026-04-08', conf: 'KCH-4410', cost: 520 },
+                    { vaultId: activeVaultId, tripId: tripRefId, name: 'Swissotel Nankai Osaka', checkIn: '2026-04-08', checkOut: '2026-04-10', conf: 'SNO-9901', cost: 410 }
                 ];
 
-                for (const itemText of samplePacking) {
-                    const packPayload = {
-                        vaultId: activeVaultId,
-                        tripId: tripRefId,
-                        text: itemText,
-                        checked: false,
-                        createdBy: currentUser ? currentUser.uid : 'anon',
-                        createdAt: new Date().toISOString(),
-                        updatedAt: new Date().toISOString()
-                    };
+                for (const lod of sampleLodging) {
                     if (isLocalFallback) {
-                        packPayload.id = 'pack_' + Math.random().toString(36).substr(2, 9);
-                        packingData.push(packPayload);
+                        lod.id = 'lod_' + Date.now() + Math.random();
+                        lodgingData.push(lod);
                     } else {
-                        await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'packing'), packPayload);
+                        await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'lodging'), lod);
+                    }
+                }
+
+                const samplePacking = [
+                    { vaultId: activeVaultId, tripId: tripRefId, text: 'Passport & International Driving Permit', checked: true },
+                    { vaultId: activeVaultId, tripId: tripRefId, text: 'Japan Power Adapter (Type A)', checked: true },
+                    { vaultId: activeVaultId, tripId: tripRefId, text: 'eSIM / Pocket Wi-Fi reservation', checked: false },
+                    { vaultId: activeVaultId, tripId: tripRefId, text: 'Comfortable walking shoes', checked: false }
+                ];
+
+                for (const pack of samplePacking) {
+                    if (isLocalFallback) {
+                        pack.id = 'pack_' + Date.now() + Math.random();
+                        packingData.push(pack);
+                    } else {
+                        await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'packing'), pack);
                     }
                 }
 
                 if (isLocalFallback) {
                     saveLocalVaultData();
-                    updateAllUI();
                 }
 
+                updateAllUI();
                 closeDiagnosticsModal();
-                showToast("Sample Japan Itinerary Loaded!");
-
+                showToast("Sample 10-day trip seeded successfully!");
             } catch (err) {
-                showToast("Seeding error: " + err.message, "error");
+                showToast("Seeding failed: " + err.message, "error");
             }
         };
 
-        // Initialize Firebase Auth & Listeners
+        // Authentication & Vault Initialization
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 currentUser = user;
-                document.getElementById('diagUid').innerText = user.uid.substring(0, 10) + '...';
-                document.getElementById('diagAuthStatus').innerText = 'Authenticated';
-                attachVaultListeners(activeVaultId);
+                document.getElementById('diagAuthStatus').innerText = "Connected";
+                document.getElementById('diagUid').innerText = user.uid;
             } else {
-                signInAnonymously(auth).catch(err => {
-                    console.warn("Auth failed, falling back to local storage:", err.message);
+                signInAnonymously(auth).catch((err) => {
+                    console.warn("Anon Auth Failed:", err);
                     enableLocalFallbackMode();
                 });
             }
+            attachVaultListeners(activeVaultId);
         });
     </script>
 </body>

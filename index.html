@@ -270,7 +270,7 @@
             </div>
         </section>
 
-        <!-- TAB CONTENT 2: FLIGHT RESERVATIONS (ENHANCED MULTI-TRANSFER) -->
+        <!-- TAB CONTENT 2: FLIGHT RESERVATIONS -->
         <section id="view-flights" class="tab-view hidden space-y-3">
             <div class="flex items-center justify-between gap-2">
                 <div>
@@ -467,7 +467,6 @@
                             <option value="Sightseeing">⛩️ Sightseeing</option>
                             <option value="Dining">🍱 Dining</option>
                             <option value="Transport">🚄 Transport</option>
-                            <option value="ThemePark">🎢 Theme Park</option>
                             <option value="Shopping">🛍️ Shopping</option>
                             <option value="Other">🌀 Other</option>
                         </select>
@@ -508,7 +507,7 @@
         </div>
     </div>
 
-    <!-- ENHANCED FLIGHT MODAL (SUPPORTING MULTIPLE TRANSFERS & LEGS) -->
+    <!-- FLIGHT MODAL -->
     <div id="flightModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-3 sm:p-4">
         <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-xl w-full p-5 sm:p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
             <button onclick="closeFlightModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-lg p-1">
@@ -838,7 +837,7 @@
             return `${dayStr} (${formattedDate})`;
         }
 
-        // Attach Direct Real-Time Snapshot Listeners (Unchanged Listener Logic)
+        // Attach Direct Real-Time Snapshot Listeners
         function attachVaultListeners(vaultId) {
             unsubscribers.forEach(unsub => unsub && unsub());
             unsubscribers = [];
@@ -979,7 +978,7 @@
             document.getElementById('counterPacking').innerText = `${pct}%`;
         }
 
-        // Render Itinerary Tab (ENHANCED: Tab & activity badges include exact dates)
+        // Render Itinerary Tab (Sorted by Day in ascending order)
         function renderItinerary() {
             const listContainer = document.getElementById('itineraryList');
             const dayContainer = document.getElementById('dayFilterContainer');
@@ -1014,6 +1013,15 @@
             });
 
             const filtered = activeDayFilter === 'ALL' ? currentActivities : currentActivities.filter(a => a.day === activeDayFilter);
+
+            // SORT ITINERARY BY DAY IN ASCENDING ORDER
+            filtered.sort((a, b) => {
+                const matchA = a.day ? a.day.match(/\d+/) : null;
+                const matchB = b.day ? b.day.match(/\d+/) : null;
+                const numA = matchA ? parseInt(matchA[0], 10) : 0;
+                const numB = matchB ? parseInt(matchB[0], 10) : 0;
+                return numA - numB;
+            });
 
             if (filtered.length === 0) {
                 listContainer.innerHTML = `
@@ -1080,7 +1088,7 @@
             return legs;
         }
 
-        // Render Flights Tab (ENHANCED: Sorted by date in ascending order)
+        // Render Flights Tab
         function renderFlights() {
             const container = document.getElementById('flightsList');
             container.innerHTML = '';
@@ -1677,14 +1685,12 @@
             const payload = {
                 vaultId: activeVaultId,
                 tripId: activeTripId,
-                // Top level fields for backward compatibility / summary counters
                 airline: primaryLeg.airline,
                 flightNum: primaryLeg.flightNum,
                 dep: primaryLeg.dep,
                 arr: finalLeg.arr,
                 pnr: document.getElementById('flightFormPnr').value.trim(),
                 cost: parseFloat(document.getElementById('flightFormCost').value) || 0,
-                // Multi-transfer dynamic legs array
                 hasConnecting: legs.length > 1,
                 legs: legs,
                 updatedAt: new Date().toISOString()
@@ -1763,12 +1769,12 @@
             try {
                 if (id) {
                     await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'lodging', id), payload);
-                    showToast('Accommodation updated!');
+                    showToast('Lodging updated!');
                 } else {
                     payload.createdBy = currentUser ? currentUser.uid : 'anon';
                     payload.createdAt = new Date().toISOString();
                     await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'lodging'), payload);
-                    showToast('Accommodation saved!');
+                    showToast('Lodging saved!');
                 }
                 closeLodgingModal();
             } catch (err) {
@@ -1779,13 +1785,13 @@
         window.deleteLodging = async function(id) {
             try {
                 await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'lodging', id));
-                showToast('Accommodation removed.');
+                showToast('Lodging removed.');
             } catch (err) {
                 showToast('Delete error: ' + err.message, 'error');
             }
         };
 
-        // Packing Checklist Handlers
+        // Packing Handlers
         window.handleAddChecklistItem = async function(e) {
             e.preventDefault();
             if (!activeTripId) { showToast('Please select or create a trip first.', 'error'); return; }
@@ -1793,18 +1799,33 @@
             const text = input.value.trim();
             if (!text) return;
 
+            const payload = {
+                vaultId: activeVaultId,
+                tripId: activeTripId,
+                text: text,
+                checked: false,
+                updatedAt: new Date().toISOString()
+            };
+
             try {
-                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'packing'), {
-                    vaultId: activeVaultId,
-                    tripId: activeTripId,
-                    text: text,
-                    checked: false,
-                    createdBy: currentUser ? currentUser.uid : 'anon',
-                    createdAt: new Date().toISOString()
-                });
+                payload.createdBy = currentUser ? currentUser.uid : 'anon';
+                payload.createdAt = new Date().toISOString();
+                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'packing'), payload);
                 input.value = '';
+                showToast('Item added to packing list!');
             } catch (err) {
-                showToast('Error adding item: ' + err.message, 'error');
+                showToast('Save error: ' + err.message, 'error');
+            }
+        };
+
+        window.togglePackingItem = async function(id, checked) {
+            try {
+                await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'packing', id), {
+                    checked: checked,
+                    updatedAt: new Date().toISOString()
+                });
+            } catch (err) {
+                showToast('Update error: ' + err.message, 'error');
             }
         };
 
@@ -1826,173 +1847,227 @@
             e.preventDefault();
             const id = document.getElementById('packingFormId').value;
             const text = document.getElementById('packingFormText').value.trim();
-            if (!text) return;
+
+            if (!id || !text) return;
 
             try {
-                if (id) {
-                    await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'packing', id), {
-                        text: text,
-                        updatedAt: new Date().toISOString()
-                    });
-                    showToast('Packing item updated!');
-                }
+                await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'packing', id), {
+                    text: text,
+                    updatedAt: new Date().toISOString()
+                });
                 closePackingModal();
+                showToast('Packing item updated!');
             } catch (err) {
-                showToast('Save error: ' + err.message, 'error');
-            }
-        };
-
-        window.togglePackingItem = async function(id, checked) {
-            try {
-                await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'packing', id), { checked });
-            } catch (err) {
-                showToast('Error toggling item: ' + err.message, 'error');
+                showToast('Update error: ' + err.message, 'error');
             }
         };
 
         window.deletePackingItem = async function(id) {
             try {
                 await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'packing', id));
+                showToast('Packing item removed.');
             } catch (err) {
-                showToast('Error removing item: ' + err.message, 'error');
+                showToast('Delete error: ' + err.message, 'error');
             }
         };
 
-        // Collaborative Notes Real-time Handler
+        // Notes Handlers
         window.handleNotesInput = function() {
             if (!activeTripId) return;
-            const text = document.getElementById('sharedNotesTextarea').value;
-            
+
             const indicator = document.getElementById('notesSaveIndicator');
-            indicator.innerHTML = `<i class="fa-solid fa-spinner animate-spin text-amber-400"></i> <span>Saving...</span>`;
+            indicator.innerHTML = '<i class="fa-solid fa-spinner animate-spin text-amber-400"></i> <span>Saving...</span>';
 
             clearTimeout(notesSaveTimeout);
             notesSaveTimeout = setTimeout(async () => {
-                const existing = notesData.find(n => n.tripId === activeTripId);
+                const text = document.getElementById('sharedNotesTextarea').value;
+                const existingNote = notesData.find(n => n.tripId === activeTripId);
+
+                const payload = {
+                    vaultId: activeVaultId,
+                    tripId: activeTripId,
+                    text: text,
+                    updatedAt: new Date().toISOString()
+                };
+
                 try {
-                    if (existing) {
-                        await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'notes', existing.id), {
-                            text: text,
-                            updatedAt: new Date().toISOString()
-                        });
+                    if (existingNote) {
+                        await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'notes', existingNote.id), payload);
                     } else {
-                        await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'notes'), {
-                            vaultId: activeVaultId,
-                            tripId: activeTripId,
-                            text: text,
-                            createdAt: new Date().toISOString()
-                        });
+                        payload.createdBy = currentUser ? currentUser.uid : 'anon';
+                        payload.createdAt = new Date().toISOString();
+                        await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'notes'), payload);
                     }
-                    indicator.innerHTML = `<i class="fa-solid fa-cloud text-brand-400"></i> <span>Synced</span>`;
+                    indicator.innerHTML = '<i class="fa-solid fa-cloud text-brand-400"></i> <span>Synced</span>';
                 } catch (err) {
-                    indicator.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-red-400"></i> <span>Sync Failed</span>`;
+                    indicator.innerHTML = '<i class="fa-solid fa-triangle-exclamation text-red-400"></i> <span>Error</span>';
                 }
-            }, 600);
+            }, 800);
         };
 
-        // Sample Data Seeding
+        // Seed Sample Japan Itinerary Data
         window.seedSampleData = async function() {
+            if (!confirm("This will seed sample Japan itinerary data into your current Vault. Proceed?")) return;
+
             try {
-                // 1. Create Sample Trip
-                const tripRef = await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'trips'), {
+                showToast("Seeding sample data...");
+
+                // Create Sample Trip
+                const tripPayload = {
                     vaultId: activeVaultId,
-                    title: "Japan Spring Cherry Blossom Trip",
+                    title: "Japan Spring Blossom Tour 🌸",
                     destination: "Tokyo & Kyoto, Japan",
                     startDate: "2026-04-01",
                     endDate: "2026-04-07",
                     createdBy: currentUser ? currentUser.uid : 'anon',
-                    createdAt: new Date().toISOString()
-                });
-                const tripId = tripRef.id;
-                activeTripId = tripId;
-                localStorage.setItem('zentravel_active_trip_id', activeTripId);
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString()
+                };
 
-                // 2. Sample Multi-Leg Flight (2 Transfers example)
-                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'flights'), {
-                    vaultId: activeVaultId,
-                    tripId: tripId,
-                    airline: "Singapore Airlines",
-                    flightNum: "SQ 638",
-                    dep: "2026-04-01T23:55",
-                    arr: "2026-04-02T13:45",
-                    pnr: "SQ782K",
-                    cost: 920.00,
-                    hasConnecting: true,
-                    legs: [
-                        {
-                            airline: "Singapore Airlines",
-                            flightNum: "SQ 638",
-                            fromAirport: "SIN (Singapore)",
-                            toAirport: "BKK (Bangkok)",
-                            dep: "2026-04-01T23:55",
-                            arr: "2026-04-02T01:25"
-                        },
-                        {
-                            airline: "Thai Airways",
-                            flightNum: "TG 660",
-                            fromAirport: "BKK (Bangkok)",
-                            toAirport: "HND (Tokyo)",
-                            dep: "2026-04-02T04:15",
-                            arr: "2026-04-02T12:00",
-                            layoverAirport: "Suvarnabhumi Airport (BKK)",
-                            layoverDuration: "2h 50m"
-                        },
-                        {
-                            airline: "ANA",
-                            flightNum: "NH 381",
-                            fromAirport: "HND (Tokyo)",
-                            toAirport: "KIX (Osaka)",
-                            dep: "2026-04-02T14:30",
-                            arr: "2026-04-02T15:45",
-                            layoverAirport: "Haneda Airport (HND)",
-                            layoverDuration: "2h 30m"
-                        }
-                    ]
-                });
-
-                // 3. Sample Lodging
-                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'lodging'), {
-                    vaultId: activeVaultId,
-                    tripId: tripId,
-                    name: "Hotel Gracery Shinjuku",
-                    checkIn: "2026-04-02",
-                    checkOut: "2026-04-05",
-                    conf: "AGD-98124",
-                    cost: 620.00
-                });
-
-                // 4. Sample Activities
-                const activities = [
-                    { day: 'Day 1', title: 'Arrival at Narita & Skyliner to Shinjuku', time: '09:30 AM', category: 'Transport', cost: 25.00, location: 'Narita Airport', notes: 'Pick up Suica Card and pocket WiFi at arrival hall.' },
-                    { day: 'Day 1', title: 'Shinjuku Gyoen National Garden Cherry Blossoms', time: '02:00 PM', category: 'Sightseeing', cost: 5.00, location: 'Shinjuku', notes: 'Great spot for viewing cherry blossoms.' }
-                ];
-
-                for (const act of activities) {
-                    await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'activities'), {
-                        vaultId: activeVaultId,
-                        tripId: tripId,
-                        ...act,
-                        createdBy: currentUser ? currentUser.uid : 'anon',
-                        createdAt: new Date().toISOString()
-                    });
+                let tripRefId;
+                if (isLocalFallback) {
+                    tripPayload.id = 'trip_' + Date.now();
+                    tripsData.push(tripPayload);
+                    tripRefId = tripPayload.id;
+                } else {
+                    const docRef = await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'trips'), tripPayload);
+                    tripRefId = docRef.id;
                 }
 
-                showToast('Sample Japan trip data loaded!');
+                activeTripId = tripRefId;
+                localStorage.setItem('zentravel_active_trip_id', activeTripId);
+
+                // Sample Activities
+                const sampleActivities = [
+                    { day: "Day 1", category: "Sightseeing", title: "Arrive at Narita & Skyliner to Tokyo", time: "02:00 PM", cost: 30, location: "Narita Airport", notes: "Collect Suica card and Pocket WiFi at Terminal 1." },
+                    { day: "Day 1", category: "Dining", title: "Dinner at Okeya Ramen Shinjuku", time: "07:00 PM", cost: 25, location: "Shinjuku, Tokyo", notes: "Famous for tonkotsu ramen." },
+                    { day: "Day 2", category: "Sightseeing", title: "Senso-ji Temple & Asakusa Street Food", time: "09:00 AM", cost: 15, location: "Asakusa, Tokyo", notes: "Try melonpan and fresh dango." },
+                    { day: "Day 2", category: "Sightseeing", title: "Tokyo Skytree Observatory Deck", time: "02:30 PM", cost: 35, location: "Sumida, Tokyo", notes: "Sunset views over Mount Fuji if clear." },
+                    { day: "Day 3", category: "Transport", title: "Shinkansen Bullet Train to Kyoto", time: "08:30 AM", cost: 140, location: "Tokyo Station → Kyoto Station", notes: "Reserved seats on Nozomi 15." },
+                    { day: "Day 3", category: "Sightseeing", title: "Fushimi Inari Torii Gate Walk", time: "03:00 PM", cost: 0, location: "Fushimi Ward, Kyoto", notes: "Hike up to Yotsutsuji intersection for evening view." },
+                    { day: "Day 4", category: "Sightseeing", title: "Arashiyama Bamboo Grove & Monkey Park", time: "08:00 AM", cost: 10, location: "Arashiyama, Kyoto", notes: "Go early to avoid tour buses." }
+                ];
+
+                for (const act of sampleActivities) {
+                    const actPayload = {
+                        vaultId: activeVaultId,
+                        tripId: tripRefId,
+                        ...act,
+                        createdBy: currentUser ? currentUser.uid : 'anon',
+                        createdAt: new Date().toISOString(),
+                        updatedAt: new Date().toISOString()
+                    };
+                    if (isLocalFallback) {
+                        actPayload.id = 'act_' + Math.random().toString(36).substr(2, 9);
+                        activitiesData.push(actPayload);
+                    } else {
+                        await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'activities'), actPayload);
+                    }
+                }
+
+                // Sample Flight
+                const flightPayload = {
+                    vaultId: activeVaultId,
+                    tripId: tripRefId,
+                    airline: "Singapore Airlines",
+                    flightNum: "SQ 638",
+                    dep: "2026-04-01T00:30",
+                    arr: "2026-04-01T08:00",
+                    pnr: "SQ882K",
+                    cost: 850,
+                    hasConnecting: false,
+                    legs: [{
+                        airline: "Singapore Airlines",
+                        flightNum: "SQ 638",
+                        fromAirport: "SIN",
+                        toAirport: "NRT",
+                        dep: "2026-04-01T00:30",
+                        arr: "2026-04-01T08:00"
+                    }],
+                    createdBy: currentUser ? currentUser.uid : 'anon',
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString()
+                };
+
+                if (isLocalFallback) {
+                    flightPayload.id = 'flt_' + Math.random().toString(36).substr(2, 9);
+                    flightsData.push(flightPayload);
+                } else {
+                    await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'flights'), flightPayload);
+                }
+
+                // Sample Lodging
+                const lodgingPayload = {
+                    vaultId: activeVaultId,
+                    tripId: tripRefId,
+                    name: "Hotel Gracery Shinjuku",
+                    checkIn: "2026-04-01",
+                    checkOut: "2026-04-03",
+                    conf: "AGD-994821",
+                    cost: 320,
+                    createdBy: currentUser ? currentUser.uid : 'anon',
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString()
+                };
+
+                if (isLocalFallback) {
+                    lodgingPayload.id = 'lodg_' + Math.random().toString(36).substr(2, 9);
+                    lodgingData.push(lodgingPayload);
+                } else {
+                    await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'lodging'), lodgingPayload);
+                }
+
+                // Sample Packing Items
+                const samplePacking = [
+                    "Passport & Visa",
+                    "Japan JR Rail Pass / Suica",
+                    "Universal Plug Adapter (Type A)",
+                    "Power Bank (10000mAh)",
+                    "Comfortable Walking Shoes",
+                    "Yen Cash (JPY)"
+                ];
+
+                for (const itemText of samplePacking) {
+                    const packPayload = {
+                        vaultId: activeVaultId,
+                        tripId: tripRefId,
+                        text: itemText,
+                        checked: false,
+                        createdBy: currentUser ? currentUser.uid : 'anon',
+                        createdAt: new Date().toISOString(),
+                        updatedAt: new Date().toISOString()
+                    };
+                    if (isLocalFallback) {
+                        packPayload.id = 'pack_' + Math.random().toString(36).substr(2, 9);
+                        packingData.push(packPayload);
+                    } else {
+                        await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'packing'), packPayload);
+                    }
+                }
+
+                if (isLocalFallback) {
+                    saveLocalVaultData();
+                    updateAllUI();
+                }
+
+                closeDiagnosticsModal();
+                showToast("Sample Japan Itinerary Loaded!");
+
             } catch (err) {
-                showToast('Seeding error: ' + err.message, 'error');
+                showToast("Seeding error: " + err.message, "error");
             }
         };
 
-        // Firebase Auth Initialization
+        // Initialize Firebase Auth & Listeners
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 currentUser = user;
-                document.getElementById('diagUid').innerText = user.uid;
-                document.getElementById('diagAuthStatus').innerText = "Connected";
+                document.getElementById('diagUid').innerText = user.uid.substring(0, 10) + '...';
+                document.getElementById('diagAuthStatus').innerText = 'Authenticated';
                 attachVaultListeners(activeVaultId);
             } else {
-                signInAnonymously(auth).catch((err) => {
-                    console.warn("Auth failed, falling back to local storage:", err);
+                signInAnonymously(auth).catch(err => {
+                    console.warn("Auth failed, falling back to local storage:", err.message);
                     enableLocalFallbackMode();
                 });
             }

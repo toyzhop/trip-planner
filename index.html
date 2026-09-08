@@ -275,7 +275,7 @@
             <div class="flex items-center justify-between gap-2">
                 <div>
                     <h3 class="text-base sm:text-lg font-bold text-white">Flight Bookings</h3>
-                    <p class="text-[11px] sm:text-xs text-slate-400">Manage airline tickets, departure times, and PNR codes</p>
+                    <p class="text-[11px] sm:text-xs text-slate-400">Manage airline tickets, departure times, PNR codes, and connecting layovers</p>
                 </div>
                 <button onclick="openFlightModal()" class="px-3.5 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-semibold text-xs sm:text-sm flex items-center gap-1.5 transition shadow-lg shadow-brand-600/20 shrink-0 active:scale-95">
                     <i class="fa-solid fa-plus"></i> <span>Add Flight</span>
@@ -507,9 +507,9 @@
         </div>
     </div>
 
-    <!-- FLIGHT MODAL -->
+    <!-- FLIGHT MODAL (ENHANCED WITH CONNECTING FLIGHT CAPTURE) -->
     <div id="flightModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-3 sm:p-4">
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-5 sm:p-6 shadow-2xl relative">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-5 sm:p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
             <button onclick="closeFlightModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-lg p-1">
                 <i class="fa-solid fa-xmark"></i>
             </button>
@@ -517,29 +517,88 @@
 
             <form onsubmit="handleFlightSubmit(event)" class="space-y-3">
                 <input type="hidden" id="flightFormId">
-                <div class="grid grid-cols-2 gap-2.5">
-                    <div>
-                        <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Airline</label>
-                        <input type="text" id="flightFormAirline" placeholder="e.g. Singapore Airlines" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-700 bg-slate-950 text-slate-100 text-xs focus:border-brand-500">
+                
+                <!-- Initial Leg Details -->
+                <div class="p-3 bg-slate-950/40 rounded-xl border border-slate-800/80 space-y-3">
+                    <span class="text-[10px] font-bold uppercase tracking-wider text-brand-400 flex items-center gap-1">
+                        <i class="fa-solid fa-plane-departure text-xs"></i> Leg 1 / Primary Flight Details
+                    </span>
+                    <div class="grid grid-cols-2 gap-2.5">
+                        <div>
+                            <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Airline</label>
+                            <input type="text" id="flightFormAirline" placeholder="e.g. Singapore Airlines" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-700 bg-slate-950 text-slate-100 text-xs focus:border-brand-500">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Flight Number</label>
+                            <input type="text" id="flightFormNum" placeholder="e.g. SQ 638" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-700 bg-slate-950 text-slate-100 text-xs focus:border-brand-500">
+                        </div>
                     </div>
-                    <div>
-                        <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Flight Number</label>
-                        <input type="text" id="flightFormNum" placeholder="e.g. SQ 638" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-700 bg-slate-950 text-slate-100 text-xs focus:border-brand-500">
+
+                    <div class="grid grid-cols-2 gap-2.5">
+                        <div>
+                            <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Departure Time</label>
+                            <input type="datetime-local" id="flightFormDep" step="60" required class="w-full px-3 py-2.5 rounded-xl border border-slate-700 bg-slate-950 text-slate-100 text-xs focus:border-brand-500">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Arrival Time</label>
+                            <input type="datetime-local" id="flightFormArr" step="60" required class="w-full px-3 py-2.5 rounded-xl border border-slate-700 bg-slate-950 text-slate-100 text-xs focus:border-brand-500">
+                        </div>
                     </div>
                 </div>
 
-                <div class="grid grid-cols-2 gap-2.5">
-                    <div>
-                        <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Departure Date & Time</label>
-                        <input type="datetime-local" id="flightFormDep" step="60" required class="w-full px-3 py-2.5 rounded-xl border border-slate-700 bg-slate-950 text-slate-100 text-xs focus:border-brand-500">
+                <!-- CONNECTING FLIGHT TOGGLE & DETAILS SECTION -->
+                <div class="border-t border-slate-800 pt-2 space-y-2">
+                    <div class="flex items-center justify-between p-2 rounded-xl bg-slate-950 border border-slate-800">
+                        <label class="flex items-center gap-2 cursor-pointer select-none">
+                            <input type="checkbox" id="flightFormHasConnecting" onchange="toggleConnectingFlightFields(this.checked)" class="w-4 h-4 rounded border-slate-700 text-brand-500 focus:ring-brand-500 bg-slate-950 cursor-pointer">
+                            <span class="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+                                <i class="fa-solid fa-code-branch text-brand-400 text-xs"></i> Connecting Flight / Layover
+                            </span>
+                        </label>
+                        <span class="text-[10px] text-slate-400">Add 2nd Leg Details</span>
                     </div>
-                    <div>
-                        <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Arrival Date & Time</label>
-                        <input type="datetime-local" id="flightFormArr" step="60" required class="w-full px-3 py-2.5 rounded-xl border border-slate-700 bg-slate-950 text-slate-100 text-xs focus:border-brand-500">
+
+                    <div id="connectingFlightContainer" class="hidden space-y-3 p-3 bg-slate-950/60 rounded-xl border border-brand-500/20">
+                        <span class="text-[10px] font-bold uppercase tracking-wider text-amber-400 flex items-center gap-1">
+                            <i class="fa-solid fa-clock-rotate-left text-xs"></i> Leg 2 / Layover & Connecting Details
+                        </span>
+
+                        <div class="grid grid-cols-2 gap-2.5">
+                            <div>
+                                <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Layover Airport / City</label>
+                                <input type="text" id="flightFormLayover" placeholder="e.g. Haneda (HND)" class="w-full px-3 py-2 rounded-xl border border-slate-700 bg-slate-950 text-slate-100 text-xs focus:border-brand-500">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Layover Duration</label>
+                                <input type="text" id="flightFormLayoverDuration" placeholder="e.g. 2h 15m" class="w-full px-3 py-2 rounded-xl border border-slate-700 bg-slate-950 text-slate-100 text-xs focus:border-brand-500">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-2.5">
+                            <div>
+                                <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Connecting Airline</label>
+                                <input type="text" id="flightFormConnAirline" placeholder="e.g. All Nippon Airways" class="w-full px-3 py-2 rounded-xl border border-slate-700 bg-slate-950 text-slate-100 text-xs focus:border-brand-500">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Connecting Flight No.</label>
+                                <input type="text" id="flightFormConnNum" placeholder="e.g. NH 842" class="w-full px-3 py-2 rounded-xl border border-slate-700 bg-slate-950 text-slate-100 text-xs focus:border-brand-500">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-2.5">
+                            <div>
+                                <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Connecting Departure</label>
+                                <input type="datetime-local" id="flightFormConnDep" step="60" class="w-full px-3 py-2 rounded-xl border border-slate-700 bg-slate-950 text-slate-100 text-xs focus:border-brand-500">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Final Arrival</label>
+                                <input type="datetime-local" id="flightFormConnArr" step="60" class="w-full px-3 py-2 rounded-xl border border-slate-700 bg-slate-950 text-slate-100 text-xs focus:border-brand-500">
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                <div class="grid grid-cols-2 gap-2.5">
+                <div class="grid grid-cols-2 gap-2.5 pt-1">
                     <div>
                         <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">PNR / Conf Key</label>
                         <input type="text" id="flightFormPnr" placeholder="e.g. SQ782K" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-700 bg-slate-950 text-slate-100 text-xs uppercase font-mono focus:border-brand-500">
@@ -818,7 +877,7 @@
             });
         }
 
-        // Attach Direct Real-Time Snapshot Listeners
+        // Attach Direct Real-Time Snapshot Listeners (Unchanged Listener Logic)
         function attachVaultListeners(vaultId) {
             unsubscribers.forEach(unsub => unsub && unsub());
             unsubscribers = [];
@@ -1022,7 +1081,7 @@
             });
         }
 
-        // Render Flights Tab
+        // Render Flights Tab (Enhanced to display connecting flight details)
         function renderFlights() {
             const container = document.getElementById('flightsList');
             container.innerHTML = '';
@@ -1039,26 +1098,75 @@
 
             current.forEach(f => {
                 const card = document.createElement('div');
-                card.className = "p-4 bg-slate-900/80 border border-slate-800 rounded-2xl space-y-2 relative";
+                card.className = "p-4 bg-slate-900/80 border border-slate-800 rounded-2xl space-y-3 relative";
+
+                // If connecting flight exists
+                const hasConn = f.hasConnecting;
+                const layoverBadge = hasConn ? `
+                    <div class="my-2 p-2 bg-slate-950/80 rounded-xl border border-brand-500/30 flex items-center justify-between text-xs">
+                        <div class="flex items-center gap-1.5 text-amber-400 font-semibold">
+                            <i class="fa-solid fa-clock-rotate-left"></i>
+                            <span>Layover: <strong class="text-white">${f.layoverAirport || 'Transfer Airport'}</strong> ${f.layoverDuration ? `(${f.layoverDuration})` : ''}</span>
+                        </div>
+                        <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-brand-500/20 text-brand-300 font-bold border border-brand-500/30">
+                            Connecting Leg
+                        </span>
+                    </div>
+                ` : '';
+
+                const connectingLegHtml = hasConn ? `
+                    <div class="p-2.5 bg-slate-950/50 rounded-xl border border-slate-800/80 space-y-1.5">
+                        <div class="flex items-center justify-between">
+                            <span class="font-bold text-slate-300 text-xs flex items-center gap-1">
+                                <i class="fa-solid fa-plane-arrival text-brand-400 text-xs"></i> 2nd Leg: ${f.connAirline || f.airline}
+                            </span>
+                            <span class="px-2 py-0.5 rounded bg-slate-800 text-slate-300 font-mono text-[11px] font-bold">${f.connFlightNum || 'Leg 2'}</span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2 text-xs text-slate-400">
+                            <div>
+                                <span class="text-[10px] text-slate-500 uppercase font-bold block">Connecting Dep</span>
+                                <span class="font-semibold text-slate-300">${formatDateTime(f.connDep)}</span>
+                            </div>
+                            <div>
+                                <span class="text-[10px] text-slate-500 uppercase font-bold block">Final Arrival</span>
+                                <span class="font-semibold text-slate-300">${formatDateTime(f.connArr)}</span>
+                            </div>
+                        </div>
+                    </div>
+                ` : '';
+
                 card.innerHTML = `
                     <div class="flex items-center justify-between pr-14">
-                        <span class="font-extrabold text-brand-400 text-sm flex items-center gap-1.5"><i class="fa-solid fa-plane"></i> ${f.airline}</span>
+                        <span class="font-extrabold text-brand-400 text-sm flex items-center gap-1.5">
+                            <i class="fa-solid fa-plane"></i> ${f.airline}
+                            ${hasConn ? '<span class="text-[9px] uppercase px-1.5 py-0.5 bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded font-bold">1 Stop</span>' : '<span class="text-[9px] uppercase px-1.5 py-0.5 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded font-bold">Direct</span>'}
+                        </span>
                         <span class="px-2 py-0.5 rounded bg-slate-800 text-slate-300 font-mono text-xs font-bold">${f.flightNum}</span>
                     </div>
+
+                    <!-- Leg 1 -->
                     <div class="grid grid-cols-2 gap-2 text-xs pt-1 border-t border-slate-800/80">
                         <div>
-                            <span class="text-[10px] text-slate-500 uppercase font-bold block">Depart</span>
+                            <span class="text-[10px] text-slate-500 uppercase font-bold block">${hasConn ? 'Initial Dep' : 'Depart'}</span>
                             <span class="font-semibold text-slate-200">${formatDateTime(f.dep)}</span>
                         </div>
                         <div>
-                            <span class="text-[10px] text-slate-500 uppercase font-bold block">Arrive</span>
+                            <span class="text-[10px] text-slate-500 uppercase font-bold block">${hasConn ? 'Layover Touchdown' : 'Arrive'}</span>
                             <span class="font-semibold text-slate-200">${formatDateTime(f.arr)}</span>
                         </div>
                     </div>
+
+                    <!-- Layover Info -->
+                    ${layoverBadge}
+
+                    <!-- Leg 2 -->
+                    ${connectingLegHtml}
+
                     <div class="flex items-center justify-between pt-2 text-xs text-slate-400 border-t border-slate-800/80">
                         <span>PNR: <code class="text-brand-400 font-mono font-bold">${f.pnr || 'N/A'}</code></span>
                         <span class="font-bold text-emerald-400">${f.cost ? formatCurrency(f.cost) : 'S$0.00'}</span>
                     </div>
+
                     <div class="absolute top-3 right-3 flex items-center gap-1">
                         <button onclick="editFlight('${f.id}')" class="text-slate-500 hover:text-brand-400 p-1.5 rounded-lg hover:bg-slate-800 transition" title="Edit Flight"><i class="fa-solid fa-pen text-xs"></i></button>
                         <button onclick="deleteFlight('${f.id}')" class="text-slate-500 hover:text-red-400 p-1.5 rounded-lg hover:bg-slate-800 transition" title="Delete Flight"><i class="fa-solid fa-trash-can text-xs"></i></button>
@@ -1146,7 +1254,6 @@
                 textarea.value = currentNote ? currentNote.text || '' : '';
             }
         }
-
 
         // Tab Navigation
         window.switchTab = function(tabName) {
@@ -1310,19 +1417,6 @@
             }
         };
 
-        window.confirmDeleteTrip = async function() {
-            if (!activeTripId) { showToast('No trip selected to delete.', 'error'); return; }
-            if (!confirm('Are you sure you want to delete this trip itinerary?')) return;
-
-            try {
-                await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'trips', activeTripId));
-                activeTripId = null;
-                showToast('Trip deleted.');
-            } catch (err) {
-                showToast('Delete error: ' + err.message, 'error');
-            }
-        };
-
         // Activity CRUD Handlers
         window.openActivityModal = function() {
             if (!activeTripId) { showToast('Please select or create a trip first.', 'error'); return; }
@@ -1399,7 +1493,17 @@
             }
         };
 
-        // Flight CRUD Handlers
+        // Flight Connecting Form Field Toggle Helper
+        window.toggleConnectingFlightFields = function(checked) {
+            const container = document.getElementById('connectingFlightContainer');
+            if (checked) {
+                container.classList.remove('hidden');
+            } else {
+                container.classList.add('hidden');
+            }
+        };
+
+        // Flight CRUD Handlers (Enhanced for Connecting Flights)
         window.openFlightModal = function() {
             if (!activeTripId) { showToast('Please select or create a trip first.', 'error'); return; }
             document.getElementById('flightFormId').value = '';
@@ -1409,6 +1513,17 @@
             document.getElementById('flightFormArr').value = '';
             document.getElementById('flightFormPnr').value = '';
             document.getElementById('flightFormCost').value = '';
+
+            // Reset connecting flight fields
+            document.getElementById('flightFormHasConnecting').checked = false;
+            document.getElementById('flightFormLayover').value = '';
+            document.getElementById('flightFormLayoverDuration').value = '';
+            document.getElementById('flightFormConnAirline').value = '';
+            document.getElementById('flightFormConnNum').value = '';
+            document.getElementById('flightFormConnDep').value = '';
+            document.getElementById('flightFormConnArr').value = '';
+            toggleConnectingFlightFields(false);
+
             document.getElementById('flightModalTitle').innerText = "Add Flight";
             document.getElementById('flightModal').classList.remove('hidden');
         };
@@ -1424,6 +1539,18 @@
             document.getElementById('flightFormArr').value = toDateTimeLocalString(item.arr);
             document.getElementById('flightFormPnr').value = item.pnr || '';
             document.getElementById('flightFormCost').value = item.cost || '';
+
+            // Populate connecting flight details
+            const hasConn = !!item.hasConnecting;
+            document.getElementById('flightFormHasConnecting').checked = hasConn;
+            document.getElementById('flightFormLayover').value = item.layoverAirport || '';
+            document.getElementById('flightFormLayoverDuration').value = item.layoverDuration || '';
+            document.getElementById('flightFormConnAirline').value = item.connAirline || '';
+            document.getElementById('flightFormConnNum').value = item.connFlightNum || '';
+            document.getElementById('flightFormConnDep').value = toDateTimeLocalString(item.connDep);
+            document.getElementById('flightFormConnArr').value = toDateTimeLocalString(item.connArr);
+            toggleConnectingFlightFields(hasConn);
+
             document.getElementById('flightModalTitle').innerText = "Edit Flight";
             document.getElementById('flightModal').classList.remove('hidden');
         };
@@ -1435,6 +1562,8 @@
         window.handleFlightSubmit = async function(e) {
             e.preventDefault();
             const id = document.getElementById('flightFormId').value;
+            const hasConn = document.getElementById('flightFormHasConnecting').checked;
+
             const payload = {
                 vaultId: activeVaultId,
                 tripId: activeTripId,
@@ -1444,6 +1573,13 @@
                 arr: toDateTimeLocalString(document.getElementById('flightFormArr').value),
                 pnr: document.getElementById('flightFormPnr').value.trim(),
                 cost: parseFloat(document.getElementById('flightFormCost').value) || 0,
+                hasConnecting: hasConn,
+                layoverAirport: hasConn ? document.getElementById('flightFormLayover').value.trim() : '',
+                layoverDuration: hasConn ? document.getElementById('flightFormLayoverDuration').value.trim() : '',
+                connAirline: hasConn ? document.getElementById('flightFormConnAirline').value.trim() : '',
+                connFlightNum: hasConn ? document.getElementById('flightFormConnNum').value.trim() : '',
+                connDep: hasConn ? toDateTimeLocalString(document.getElementById('flightFormConnDep').value) : '',
+                connArr: hasConn ? toDateTimeLocalString(document.getElementById('flightFormConnArr').value) : '',
                 updatedAt: new Date().toISOString()
             };
 
@@ -1664,16 +1800,23 @@
                 activeTripId = tripId;
                 localStorage.setItem('zentravel_active_trip_id', activeTripId);
 
-                // 2. Sample Flights
+                // 2. Sample Flights (Includes sample connecting flight)
                 await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'flights'), {
                     vaultId: activeVaultId,
                     tripId: tripId,
                     airline: "Singapore Airlines",
                     flightNum: "SQ 638",
                     dep: "2026-04-01T23:55",
-                    arr: "2026-04-02T08:00",
+                    arr: "2026-04-02T06:30",
                     pnr: "SQ782K",
-                    cost: 850.00
+                    cost: 850.00,
+                    hasConnecting: true,
+                    layoverAirport: "Haneda Airport (HND)",
+                    layoverDuration: "2h 15m",
+                    connAirline: "All Nippon Airways",
+                    connFlightNum: "NH 842",
+                    connDep: "2026-04-02T08:45",
+                    connArr: "2026-04-02T10:00"
                 });
 
                 // 3. Sample Lodging
